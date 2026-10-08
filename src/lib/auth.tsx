@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { flushSync } from 'react-dom';
-import { api, setAccessToken, tryRefresh } from './api';
+import { api, getAccessToken, setAccessToken, tryRefresh } from './api';
 import { clearAdminResume, readAdminResume, writeAdminResume, type AdminResume } from './impersonation';
 import { clearSessionHint, hasSessionHint, markSessionHint } from './session-hint';
 import type { PublicUser } from './types';
@@ -168,14 +168,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         const hadSession = hasSessionHint();
         invalidateRestore();
-        clearSessionHint();
         if (hadSession) {
           try {
-            await api('/api/auth/logout', { method: 'POST', auth: false });
+            await api('/api/auth/logout', {
+              method: 'POST',
+              auth: Boolean(getAccessToken()),
+              retry: false,
+            });
           } catch {
-            // Already logged out server-side.
+            // Idempotent — cookie cleared locally below either way.
           }
         }
+        clearSessionHint();
         flushSync(() => {
           clearAdminResume();
           setResume(null);
