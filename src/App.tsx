@@ -73,14 +73,14 @@ function GuestOnly({ children }: { children: ReactNode }) {
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
   if (!ready) return <BootScreen />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   return children;
 }
 
 function RequireSuperAdmin({ children }: { children: ReactNode }) {
   const { user, ready, impersonation } = useAuth();
   if (!ready) return <BootScreen />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (!user.emailVerified) return <Navigate to="/verify-email" replace />;
   if (!user.isSuperAdmin || impersonation) return <Navigate to="/app" replace />;
   return children;

@@ -18,7 +18,6 @@ import {
 import { CRM_BASE } from '../lib/crm/paths';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { BrandMark } from './BrandMark';
 import { ImpersonationBanner } from './ImpersonationBanner';
@@ -40,7 +39,7 @@ const NAV = [
 ];
 
 export function AppShell() {
-  const { user, clearSession, impersonation } = useAuth();
+  const { user, signOut, impersonation } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,12 +71,7 @@ export function AppShell() {
   }, []);
 
   async function logout() {
-    try {
-      await api('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // Session is cleared locally either way.
-    }
-    clearSession();
+    await signOut();
     navigate('/', { replace: true });
   }
 

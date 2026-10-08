@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { BrandMark } from './BrandMark';
 
@@ -41,7 +40,7 @@ const NAV_GROUPS = [
 ];
 
 export function AdminShell() {
-  const { user, clearSession } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -73,12 +72,7 @@ export function AdminShell() {
   }, []);
 
   async function logout() {
-    try {
-      await api('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // Session is cleared locally either way.
-    }
-    clearSession();
+    await signOut();
     navigate('/', { replace: true });
   }
 

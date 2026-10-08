@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { flushSync } from 'react-dom';
 import { api, setAccessToken, tryRefresh } from './api';
 import { clearAdminResume, readAdminResume, writeAdminResume, type AdminResume } from './impersonation';
 import type { PublicUser } from './types';
@@ -9,6 +18,7 @@ type AuthContextValue = {
   impersonation: { actorName: string; actorEmail: string } | null;
   setSession: (user: PublicUser, accessToken: string) => void;
   clearSession: () => void;
+  signOut: () => Promise<void>;
   rememberImpersonation: (resume: AdminResume) => void;
   forgetImpersonation: () => void;
   exitImpersonation: () => Promise<PublicUser | null>;
@@ -33,16 +43,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [ready, setReady] = useState(false);
   const [resume, setResume] = useState<AdminResume | null>(null);
+  const restoreGenRef = useRef(0);
+
+  function invalidateRestore() {
+    restoreGenRef.current += 1;
+  }
+
+  function applyClearSession() {
+    invalidateRestore();
+    clearAdminResume();
+    setResume(null);
+    setAccessToken(null);
+    setUser(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
 
     async function restoreSession() {
+      const gen = restoreGenRef.current;
       const ok = await tryRefresh();
-      if (!ok || cancelled) return;
+      if (!ok || cancelled || gen !== restoreGenRef.current) return;
       try {
         const me = await api<PublicUser>('/api/auth/me');
-        if (cancelled) return;
+        if (cancelled || gen !== restoreGenRef.current) return;
         if (me.isSuperAdmin) {
           clearAdminResume();
           setResume(null);
@@ -51,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setUser(me);
       } catch {
-        setAccessToken(null);
+        if (gen === restoreGenRef.current) setAccessToken(null);
       }
     }
 
@@ -110,10 +134,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(next);
       },
       clearSession: () => {
-        clearAdminResume();
-        setResume(null);
-        setAccessToken(null);
-        setUser(null);
+        flushSync(() => applyClearSession());
+      },
+      signOut: async () => {
+        invalidateRestore();
+        try {
+          await api('/api/auth/logout', { method: 'POST', auth: false });
+        } catch {
+          // Cookie cleared locally in applyClearSession either way.
+        }
+        flushSync(() => applyClearSession());
       },
       rememberImpersonation: (next) => {
         writeAdminResume(next);

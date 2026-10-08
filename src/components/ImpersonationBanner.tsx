@@ -4,7 +4,7 @@ import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export function ImpersonationBanner() {
-  const { user, impersonation, exitImpersonation, clearSession } = useAuth();
+  const { user, impersonation, exitImpersonation, signOut } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,14 +17,14 @@ export function ImpersonationBanner() {
     try {
       const admin = await exitImpersonation();
       if (!admin) {
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
         return;
       }
       navigate('/admin', { replace: true });
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 400)) {
-        clearSession();
-        navigate('/login', { replace: true });
+        await signOut();
+        navigate('/', { replace: true });
         return;
       }
       setError(err instanceof ApiError ? err.message : 'Could not return to Super Admin');
