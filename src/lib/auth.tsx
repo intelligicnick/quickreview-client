@@ -22,6 +22,13 @@ export function homePath(user: PublicUser): string {
   return '/app';
 }
 
+/** Routes that can render before session restore (marketing, auth forms, public guest pages). */
+function canPaintBeforeAuth(pathname: string): boolean {
+  if (pathname === '/') return true;
+  if (['/login', '/register', '/forgot-password', '/reset-password'].includes(pathname)) return true;
+  return /^\/(r|q|c|go|menu|quick-revisit)\//.test(pathname);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [ready, setReady] = useState(false);
@@ -29,25 +36,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+
+    async function restoreSession() {
       const ok = await tryRefresh();
-      if (ok && !cancelled) {
-        try {
-          const me = await api<PublicUser>('/api/auth/me');
-          if (cancelled) return;
-          if (me.isSuperAdmin) {
-            clearAdminResume();
-            setResume(null);
-          } else {
-            setResume(readAdminResume());
-          }
-          setUser(me);
-        } catch {
-          setAccessToken(null);
+      if (!ok || cancelled) return;
+      try {
+        const me = await api<PublicUser>('/api/auth/me');
+        if (cancelled) return;
+        if (me.isSuperAdmin) {
+          clearAdminResume();
+          setResume(null);
+        } else {
+          setResume(readAdminResume());
         }
+        setUser(me);
+      } catch {
+        setAccessToken(null);
       }
+    }
+
+    const pathname = window.location.pathname;
+    const paintFirst = canPaintBeforeAuth(pathname);
+
+    if (paintFirst) {
+      setReady(true);
+      if (pathname === '/') {
+        const defer = () => {
+          if (!cancelled) void restoreSession();
+        };
+        if (typeof requestIdleCallback === 'function') {
+          const id = requestIdleCallback(defer, { timeout: 3000 });
+          return () => {
+            cancelled = true;
+            cancelIdleCallback(id);
+          };
+        }
+        const id = window.setTimeout(defer, 0);
+        return () => {
+          cancelled = true;
+          clearTimeout(id);
+        };
+      }
+      void restoreSession();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void restoreSession().finally(() => {
       if (!cancelled) setReady(true);
-    })();
+    });
     return () => {
       cancelled = true;
     };

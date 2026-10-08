@@ -105,18 +105,36 @@ export async function apiBlob(path: string): Promise<Blob> {
   return response.blob();
 }
 
-export async function tryRefresh(): Promise<boolean> {
+export async function tryRefresh(timeoutMs = 6000): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const data = await api<{ user: unknown; accessToken: string }>('/api/auth/refresh', {
+    const response = await fetch(`${BASE}/api/auth/refresh`, {
       method: 'POST',
-      auth: false,
-      retry: false,
-      body: {},
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: '{}',
+      signal: controller.signal,
     });
-    setAccessToken(data.accessToken);
+
+    let payload: ApiSuccess<{ accessToken: string }> | ApiFailure | undefined;
+    try {
+      payload = (await response.json()) as ApiSuccess<{ accessToken: string }> | ApiFailure;
+    } catch {
+      payload = undefined;
+    }
+
+    if (!response.ok || !payload || payload.success === false) {
+      setAccessToken(null);
+      return false;
+    }
+
+    setAccessToken(payload.data.accessToken);
     return true;
   } catch {
     setAccessToken(null);
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }

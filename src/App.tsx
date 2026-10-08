@@ -87,8 +87,7 @@ function RequireSuperAdmin({ children }: { children: ReactNode }) {
 }
 
 function PublicEntry() {
-  const { user, ready } = useAuth();
-  if (!ready) return <BootScreen />;
+  const { user } = useAuth();
   if (user) return <Navigate to={homePath(user)} replace />;
   return <LandingPage />;
 }
