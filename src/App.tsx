@@ -61,6 +61,7 @@ import { CrmSearchPage } from './pages/crm/CrmSearchPage';
 import { CrmSettingsPage } from './pages/crm/CrmSettingsPage';
 import { CrmTeamPage } from './pages/crm/CrmTeamPage';
 import { RequireCrmOnboarding } from './pages/crm/RequireCrmOnboarding';
+import { LandingPage } from './pages/LandingPage';
 
 function GuestOnly({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
@@ -85,11 +86,11 @@ function RequireSuperAdmin({ children }: { children: ReactNode }) {
   return children;
 }
 
-function HomeRedirect() {
+function PublicEntry() {
   const { user, ready } = useAuth();
   if (!ready) return <BootScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={homePath(user)} replace />;
+  if (user) return <Navigate to={homePath(user)} replace />;
+  return <LandingPage />;
 }
 
 function BootScreen() {
@@ -101,7 +102,7 @@ function BootScreen() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/" element={<PublicEntry />} />
       <Route
         path="/login"
         element={
@@ -198,7 +199,7 @@ export default function App() {
         <Route path="marketplace" element={<AdminMarketplacePage />} />
         <Route path="contact" element={<AdminContactPage />} />
       </Route>
-      <Route path="*" element={<HomeRedirect />} />
+      <Route path="*" element={<PublicEntry />} />
     </Routes>
   );
 }

@@ -142,3 +142,16 @@ textarea.field {
     radial-gradient(ellipse 55% 45% at 100% 8%, rgba(47, 123, 255, 0.1), transparent 50%),
     var(--color-paper);
 }
+
+.landing-hero-panel {
+  background:
+    radial-gradient(ellipse 70% 80% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+    linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dark) 100%);
+}
+
+.landing-mesh {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 100%, rgba(26, 109, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 20%, rgba(47, 123, 255, 0.25), transparent 50%),
+    var(--color-ink);
+}
