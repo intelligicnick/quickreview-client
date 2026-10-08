@@ -10,6 +10,7 @@ import {
 import { flushSync } from 'react-dom';
 import { api, setAccessToken, tryRefresh } from './api';
 import { clearAdminResume, readAdminResume, writeAdminResume, type AdminResume } from './impersonation';
+import { clearSessionHint, hasSessionHint, markSessionHint } from './session-hint';
 import type { PublicUser } from './types';
 
 type AuthContextValue = {
@@ -32,11 +33,18 @@ export function homePath(user: PublicUser): string {
   return '/app';
 }
 
-/** Routes that can render before session restore (marketing, auth forms, public guest pages). */
-function canPaintBeforeAuth(pathname: string): boolean {
-  if (pathname === '/') return true;
-  if (['/login', '/register', '/forgot-password', '/reset-password'].includes(pathname)) return true;
+function isAuthFormPath(pathname: string): boolean {
+  return ['/login', '/register', '/forgot-password', '/reset-password'].includes(pathname);
+}
+
+function isPublicGuestPath(pathname: string): boolean {
   return /^\/(r|q|c|go|menu|quick-revisit)\//.test(pathname);
+}
+
+/** Marketing home + auth forms: no refresh unless this tab previously signed in. */
+function shouldRestoreOnPublicPage(pathname: string): boolean {
+  if (!hasSessionHint()) return false;
+  return pathname === '/' || isAuthFormPath(pathname);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -44,13 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [resume, setResume] = useState<AdminResume | null>(null);
   const restoreGenRef = useRef(0);
+  const restorePromiseRef = useRef<Promise<void> | null>(null);
 
   function invalidateRestore() {
     restoreGenRef.current += 1;
+    restorePromiseRef.current = null;
   }
 
   function applyClearSession() {
     invalidateRestore();
+    clearSessionHint();
     clearAdminResume();
     setResume(null);
     setAccessToken(null);
@@ -67,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const me = await api<PublicUser>('/api/auth/me');
         if (cancelled || gen !== restoreGenRef.current) return;
+        markSessionHint();
         if (me.isSuperAdmin) {
           clearAdminResume();
           setResume(null);
@@ -75,39 +87,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setUser(me);
       } catch {
-        if (gen === restoreGenRef.current) setAccessToken(null);
+        if (gen === restoreGenRef.current) {
+          setAccessToken(null);
+          clearSessionHint();
+        }
       }
     }
 
-    const pathname = window.location.pathname;
-    const paintFirst = canPaintBeforeAuth(pathname);
+    function ensureSessionRestore(): Promise<void> {
+      if (restorePromiseRef.current) return restorePromiseRef.current;
+      restorePromiseRef.current = restoreSession().finally(() => {
+        restorePromiseRef.current = null;
+      });
+      return restorePromiseRef.current;
+    }
 
-    if (paintFirst) {
+    const pathname = window.location.pathname;
+    const publicSurface =
+      pathname === '/' || isAuthFormPath(pathname) || isPublicGuestPath(pathname);
+
+    if (publicSurface) {
       setReady(true);
-      if (pathname === '/') {
-        const defer = () => {
-          if (!cancelled) void restoreSession();
-        };
-        if (typeof requestIdleCallback === 'function') {
-          const id = requestIdleCallback(defer, { timeout: 3000 });
-          return () => {
-            cancelled = true;
-            cancelIdleCallback(id);
-          };
-        }
-        const id = window.setTimeout(defer, 0);
-        return () => {
-          cancelled = true;
-          clearTimeout(id);
-        };
+      if (shouldRestoreOnPublicPage(pathname)) {
+        void ensureSessionRestore();
       }
-      void restoreSession();
       return () => {
         cancelled = true;
       };
     }
 
-    void restoreSession().finally(() => {
+    void ensureSessionRestore().finally(() => {
       if (!cancelled) setReady(true);
     });
     return () => {
@@ -126,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ready,
       impersonation,
       setSession: (next, token) => {
+        markSessionHint();
         if (next.isSuperAdmin) {
           clearAdminResume();
           setResume(null);
@@ -137,13 +147,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         flushSync(() => applyClearSession());
       },
       signOut: async () => {
+        const hadSession = hasSessionHint();
         invalidateRestore();
-        try {
-          await api('/api/auth/logout', { method: 'POST', auth: false });
-        } catch {
-          // Cookie cleared locally in applyClearSession either way.
+        clearSessionHint();
+        if (hadSession) {
+          try {
+            await api('/api/auth/logout', { method: 'POST', auth: false });
+          } catch {
+            // Already logged out server-side.
+          }
         }
-        flushSync(() => applyClearSession());
+        flushSync(() => {
+          clearAdminResume();
+          setResume(null);
+          setAccessToken(null);
+          setUser(null);
+        });
       },
       rememberImpersonation: (next) => {
         writeAdminResume(next);
@@ -169,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         clearAdminResume();
         setResume(null);
+        markSessionHint();
         setAccessToken(data.accessToken);
         setUser(data.user);
         return data.user;

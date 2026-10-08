@@ -1,3 +1,4 @@
+import { hasSessionHint } from './session-hint';
 import type { ApiFailure, ApiSuccess } from './types';
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -43,7 +44,13 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (response.status === 401 && auth && retry && path !== '/api/auth/refresh') {
+  if (
+    response.status === 401 &&
+    auth &&
+    retry &&
+    path !== '/api/auth/refresh' &&
+    (accessToken || hasSessionHint())
+  ) {
     const refreshed = await tryRefresh();
     if (refreshed) return api<T>(path, { ...options, retry: false });
   }
