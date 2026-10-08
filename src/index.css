@@ -155,3 +155,28 @@ textarea.field {
     radial-gradient(ellipse 50% 40% at 90% 20%, rgba(47, 123, 255, 0.25), transparent 50%),
     var(--color-ink);
 }
+
+.landing-blob {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 45%),
+    radial-gradient(circle at 70% 70%, rgba(26, 109, 255, 0.5), transparent 50%),
+    linear-gradient(145deg, var(--color-brand) 0%, var(--color-brand-dark) 100%);
+}
+
+.landing-card-well {
+  background:
+    radial-gradient(ellipse 80% 70% at 100% 100%, rgba(26, 109, 255, 0.12), transparent 55%),
+    var(--color-paper);
+}
+
+.landing-final-cta {
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 0%, rgba(26, 109, 255, 0.1), transparent 55%),
+    white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-float-tile {
+    transform: none !important;
+  }
+}

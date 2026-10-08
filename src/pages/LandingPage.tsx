@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Clock,
   MapPin,
   MessageSquare,
+  Palette,
   QrCode,
   Sparkles,
   Star,
@@ -10,8 +12,30 @@ import {
   Users,
 } from 'lucide-react';
 import { BrandMark } from '../components/BrandMark';
+import { LandingHighlightCard } from '../components/landing/LandingHighlightCard';
 import { LandingNav } from '../components/landing/LandingNav';
-import { LandingPhoneSingle, LandingPhoneStack } from '../components/landing/LandingPhoneStack';
+import {
+  LandingPhoneDashboard,
+  LandingPhoneReviewMini,
+  LandingPhoneStack,
+} from '../components/landing/LandingPhoneStack';
+import { LandingSectionHeader } from '../components/landing/LandingSectionHeader';
+import { LandingSplitSection } from '../components/landing/LandingSplitSection';
+import { AnalyticsDonutVisual } from '../components/landing/visuals/AnalyticsDonutVisual';
+import { MenuStackVisual } from '../components/landing/visuals/MenuStackVisual';
+import { ProductFloatVisual } from '../components/landing/visuals/ProductFloatVisual';
+import { QrStandeeVisual } from '../components/landing/visuals/QrStandeeVisual';
+import { ReviewStarsVisual } from '../components/landing/visuals/ReviewStarsVisual';
+import { StatsLineChartVisual } from '../components/landing/visuals/StatsLineChartVisual';
+
+const TRUST_ITEMS = [
+  { icon: MapPin, label: 'Google import' },
+  { icon: QrCode, label: 'QR codes' },
+  { icon: Star, label: 'Reviews' },
+  { icon: UtensilsCrossed, label: 'Menus' },
+  { icon: Users, label: 'CRM' },
+  { icon: Palette, label: 'Posters' },
+] as const;
 
 export function LandingPage() {
   return (
@@ -56,32 +80,68 @@ export function LandingPage() {
 
         <section id="features" className="scroll-mt-20 bg-paper py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FeatureCard
+            <LandingSectionHeader
+              eyebrow="Features"
+              title="Everything in one workspace"
+              subtitle="Guest-facing pages and merchant tools that stay in sync — no juggling five different apps."
+            />
+            <div className="mt-10 grid gap-5 md:grid-cols-2">
+              <LandingHighlightCard
                 icon={Star}
                 title="QuickReview on every scan"
                 description="Collect star ratings, capture private feedback, and send happy customers to Google — all from a branded guest page."
+                visual={<ReviewStarsVisual />}
               />
-              <FeatureCard
+              <LandingHighlightCard
                 icon={UtensilsCrossed}
                 title="Quick Commerce menus"
                 description="Publish a mobile menu and catalogue guests can browse from your QR — prices, veg badges, and photos included."
+                visual={<MenuStackVisual />}
               />
             </div>
           </div>
         </section>
 
-        <section id="advantages" className="scroll-mt-20 py-16 sm:py-20">
+        <section className="py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <LandingSplitSection
+              visual={
+                <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center lg:justify-start">
+                  <QrStandeeVisual />
+                  <LandingPhoneReviewMini />
+                </div>
+              }
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">QR flow</p>
+              <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                Scan once, route every guest
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
+                One code on the counter or table opens the right experience — reviews, menus, or your
+                digital card.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm">
+                <Bullet>Guests tap stars on a branded QuickReview page</Bullet>
+                <Bullet>Low ratings stay private so you can fix issues first</Bullet>
+                <Bullet>4–5★ ratings can hand off to Google in one tap</Bullet>
+              </ul>
+            </LandingSplitSection>
+          </div>
+        </section>
+
+        <section id="advantages" className="scroll-mt-20 bg-paper py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
               <div>
-                <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                  Advantages
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-                  Everything you need to look professional online and stay on top of customers — without
-                  a complicated stack.
-                </p>
+                <LandingSectionHeader
+                  align="left"
+                  eyebrow="Why us"
+                  title="Advantages"
+                  subtitle="Everything you need to look professional online and stay on top of customers — without a complicated stack."
+                />
+                <div className="mt-8 hidden lg:block">
+                  <AnalyticsDonutVisual />
+                </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <AdvantageItem
@@ -109,42 +169,61 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-line bg-white py-10">
+        <section className="border-y border-line bg-white py-12 sm:py-14">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-muted">
-              Built for local business
-            </p>
-            <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-semibold text-ink/80">
-              <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-brand" aria-hidden />
-                Google Business import
-              </li>
-              <li className="flex items-center gap-2">
-                <QrCode className="h-4 w-4 text-brand" aria-hidden />
-                QR codes & standees
-              </li>
-              <li className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-brand" aria-hidden />
-                Reviews & feedback
-              </li>
-              <li className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-brand" aria-hidden />
-                Simple CRM
-              </li>
+            <LandingSectionHeader
+              title="Built for local business"
+              subtitle="Shops, cafés, salons, and service counters — the same simple toolkit."
+            />
+            <ul className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
+              {TRUST_ITEMS.map(({ icon: Icon, label }) => (
+                <li key={label} className="flex w-[88px] flex-col items-center gap-2 text-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-paper shadow-sm">
+                    <Icon className="h-5 w-5 text-brand" aria-hidden />
+                  </span>
+                  <span className="text-xs font-semibold text-ink/80">{label}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </section>
 
+        <section className="py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <LandingSplitSection
+              reverse
+              visual={<StatsLineChartVisual />}
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Analytics</p>
+              <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                See activity in real time
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
+                Page views, star taps, private feedback, and Google opens — so you know what guests
+                actually do after they scan.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm">
+                <Bullet>Per-location dashboard at a glance</Bullet>
+                <Bullet>Product status for Review, Commerce, and Connect</Bullet>
+                <Bullet>Activate QuickDesign posters and QuickScan when you are ready</Bullet>
+              </ul>
+            </LandingSplitSection>
+          </div>
+        </section>
+
         <section id="products" className="scroll-mt-20 landing-mesh py-16 text-white sm:py-20">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
-            <div>
-              <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Keep your finger on the pulse
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <LandingSplitSection
+              visual={<ProductFloatVisual />}
+              className="lg:items-center"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Products</p>
+              <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                Five tools, one login
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-white/75 sm:text-base">
-                See page views, star taps, and Google opens at a glance. Activate QuickReview,
-                Quick Commerce, QuickConnect, QuickDesign posters, and QuickScan card capture as you
-                grow.
+                Turn on what you need today — reviews, menus, digital cards, CRM, posters, and card
+                scanning — without replatforming later.
               </p>
               <Link
                 to="/register"
@@ -152,30 +231,44 @@ export function LandingPage() {
               >
                 Start free
               </Link>
+            </LandingSplitSection>
+
+            <div className="mt-16 grid items-center gap-10 border-t border-white/10 pt-16 lg:grid-cols-2">
+              <div>
+                <h3 className="font-display text-xl font-bold sm:text-2xl">
+                  Your dashboard in your pocket
+                </h3>
+                <p className="mt-2 text-sm text-white/70">
+                  Operate each location from one place — alerts, quick actions, and live product
+                  status.
+                </p>
+              </div>
+              <LandingPhoneDashboard />
             </div>
-            <LandingPhoneSingle />
           </div>
         </section>
 
-        <section className="py-16 sm:py-24">
-          <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
-            <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Get the workspace free and start now
-            </h2>
-            <p className="mt-3 text-sm text-muted sm:text-base">
-              Create an account, import your location, and publish your first guest page today.
-            </p>
-            <Link
-              to="/register"
-              className="mt-8 inline-flex min-h-12 items-center rounded-2xl bg-ink px-8 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              Get started
-            </Link>
+        <section className="bg-paper py-16 sm:py-24">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+            <div className="landing-final-cta rounded-[2rem] border border-line px-6 py-12 text-center shadow-[0_16px_48px_rgba(27,35,51,0.06)] sm:px-10 sm:py-14">
+              <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+                Get the workspace free and start now
+              </h2>
+              <p className="mt-3 text-sm text-muted sm:text-base">
+                Create an account, import your location, and publish your first guest page today.
+              </p>
+              <Link
+                to="/register"
+                className="mt-8 inline-flex min-h-12 items-center rounded-2xl bg-ink px-8 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                Get started
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-ink px-4 py-12 text-white sm:px-6">
+      <footer className="bg-ink px-4 py-14 text-white sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-10 sm:flex-row sm:justify-between">
           <div>
             <BrandMark className="brightness-0 invert" />
@@ -224,23 +317,12 @@ export function LandingPage() {
   );
 }
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Star;
-  title: string;
-  description: string;
-}) {
+function Bullet({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-8">
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-        <Icon className="h-5 w-5" />
-      </span>
-      <h3 className="font-display mt-4 text-lg font-bold">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
-    </div>
+    <li className="flex gap-3 text-muted">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -254,9 +336,9 @@ function AdvantageItem({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-white p-5">
+    <div className="rounded-2xl border border-line bg-white p-5 transition-colors hover:border-brand/30 hover:shadow-sm">
       <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-4 w-4" aria-hidden />
       </span>
       <h3 className="mt-3 font-bold">{title}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{description}</p>

@@ -43,3 +43,23 @@ export function LandingPhoneSingle() {
     </div>
   );
 }
+
+export function LandingPhoneDashboard() {
+  return (
+    <div className="mx-auto w-[min(100%,240px)]" aria-hidden>
+      <MobileScreenFrame compact hideNotch>
+        <LandingDashboardScreen />
+      </MobileScreenFrame>
+    </div>
+  );
+}
+
+export function LandingPhoneReviewMini() {
+  return (
+    <div className="mx-auto w-[min(100%,180px)] -rotate-3 scale-[0.88] sm:scale-95" aria-hidden>
+      <MobileScreenFrame compact hideNotch className="shadow-xl">
+        <LandingReviewScreen />
+      </MobileScreenFrame>
+    </div>
+  );
+}
