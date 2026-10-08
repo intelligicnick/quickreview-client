@@ -41,10 +41,20 @@ function isPublicGuestPath(pathname: string): boolean {
   return /^\/(r|q|c|go|menu|quick-revisit)\//.test(pathname);
 }
 
-/** Marketing home + auth forms: no refresh unless this tab previously signed in. */
-function shouldRestoreOnPublicPage(pathname: string): boolean {
-  if (!hasSessionHint()) return false;
-  return pathname === '/' || isAuthFormPath(pathname);
+/**
+ * Only auth forms may silently restore (e.g. "already signed in" on /login).
+ * Landing (/) never calls refresh — avoids cookie restore → auto redirect to /admin.
+ */
+function shouldRestoreOnAuthForm(pathname: string): boolean {
+  return hasSessionHint() && isAuthFormPath(pathname);
+}
+
+function isProtectedAppPath(pathname: string): boolean {
+  return (
+    pathname.startsWith('/app') ||
+    pathname.startsWith('/admin') ||
+    pathname === '/verify-email'
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -103,14 +113,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const pathname = window.location.pathname;
-    const publicSurface =
+    const marketingOrGuest =
       pathname === '/' || isAuthFormPath(pathname) || isPublicGuestPath(pathname);
 
-    if (publicSurface) {
+    if (marketingOrGuest) {
       setReady(true);
-      if (shouldRestoreOnPublicPage(pathname)) {
+      if (shouldRestoreOnAuthForm(pathname)) {
         void ensureSessionRestore();
       }
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isProtectedAppPath(pathname)) {
+      void ensureSessionRestore().finally(() => {
+        if (!cancelled) setReady(true);
+      });
       return () => {
         cancelled = true;
       };

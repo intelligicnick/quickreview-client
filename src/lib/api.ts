@@ -44,15 +44,13 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (
-    response.status === 401 &&
-    auth &&
-    retry &&
-    path !== '/api/auth/refresh' &&
-    (accessToken || hasSessionHint())
-  ) {
-    const refreshed = await tryRefresh();
-    if (refreshed) return api<T>(path, { ...options, retry: false });
+  if (response.status === 401 && auth && retry && path !== '/api/auth/refresh') {
+    if (!accessToken && !hasSessionHint()) {
+      // Guest on marketing/auth pages — do not probe refresh (avoids 401 noise).
+    } else {
+      const refreshed = await tryRefresh();
+      if (refreshed) return api<T>(path, { ...options, retry: false });
+    }
   }
 
   let payload: ApiSuccess<T> | ApiFailure | undefined;
