@@ -79,7 +79,7 @@ export function AdminShell() {
       // Session is cleared locally either way.
     }
     clearSession();
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   }
 
   return (
