@@ -1,13 +1,12 @@
-import { CreditCard, IdCard, QrCode, ShoppingBag, Star, UtensilsCrossed } from 'lucide-react';
+import { CreditCard, IdCard, QrCode, Star, UtensilsCrossed } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const TABS = [
   { to: '/app/quickreview', label: 'Reviews', icon: Star },
   { to: '/app/quickcommerce', label: 'QuickCommerce', icon: UtensilsCrossed },
   { to: '/app/quickconnect', label: 'Connect', icon: IdCard },
-  { to: '/app/qr', label: 'QR codes', icon: QrCode },
-  { to: '/app/marketplace', label: 'Marketplace', icon: ShoppingBag },
-  { to: '/app/subscription', label: 'Billing', icon: CreditCard },
+  { to: '/app/qr', label: 'QR & standees', icon: QrCode },
+  { to: '/app/subscription', label: 'Plans & billing', icon: CreditCard },
 ] as const;
 
 const WORKSPACE_PREFIXES = [

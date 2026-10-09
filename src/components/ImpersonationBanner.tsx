@@ -33,18 +33,18 @@ export function ImpersonationBanner() {
   }
 
   return (
-    <div className="bg-ink px-4 py-3 text-white sm:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm">
-          You are in <span className="font-semibold">{user?.name}</span>&apos;s merchant panel.
+    <div className="bg-ink px-4 py-2 text-white sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs sm:text-sm">
+          Viewing as <span className="font-semibold">{user?.name}</span>
         </p>
         <button
           type="button"
           onClick={() => void exit()}
           disabled={busy}
-          className="inline-flex min-h-10 items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-ink disabled:opacity-60"
+          className="inline-flex min-h-8 items-center rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-ink disabled:opacity-60 sm:text-sm"
         >
-          {busy ? 'Returning…' : 'Back to Super Admin'}
+          {busy ? 'Returning…' : 'Exit to Super Admin'}
         </button>
       </div>
       {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}

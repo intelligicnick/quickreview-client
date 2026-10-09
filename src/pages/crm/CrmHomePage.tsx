@@ -12,7 +12,9 @@ export function CrmHomePage() {
   const quotes = state.quotations.filter((q) => q.documentType === 'quotation');
   const invoices = state.quotations.filter((q) => q.documentType === 'invoice');
   const unpaidInvoices = invoices.filter((i) => i.status !== 'paid');
-  const pendingTotal = state.sales.reduce((sum, s) => sum + pendingAmount(s), 0);
+  const openQuotesValue = quotes.reduce((sum, q) => sum + q.total, 0);
+  const unpaidInvoiceTotal = unpaidInvoices.reduce((sum, i) => sum + i.total, 0);
+  const salesPending = state.sales.reduce((sum, s) => sum + pendingAmount(s), 0);
   const dueToday = state.followUps.filter((f) => !f.completedAt && isToday(f.dueAt));
 
   const recentCustomers = state.customers.slice(0, 3);
@@ -20,11 +22,15 @@ export function CrmHomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <StatPill label="Customers" value={customers} hint="Manage contacts" />
         <StatPill label="Quotations" value={quotes.length} hint="Awaiting response" />
         <StatPill label="Invoices" value={unpaidInvoices.length} hint="To collect" />
-        <StatPill label="Pending ₹" value={formatInr(pendingTotal)} />
+        <StatPill label="Open quotes" value={formatInr(openQuotesValue)} hint="Awaiting customer response" />
+        <StatPill label="Unpaid invoices" value={formatInr(unpaidInvoiceTotal)} hint="To collect" />
+        {salesPending > 0 ? (
+          <StatPill label="Sales balance" value={formatInr(salesPending)} hint="Recorded sales not fully paid" />
+        ) : null}
       </div>
 
       <section className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">

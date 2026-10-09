@@ -22,7 +22,7 @@ export function QuickAddFab({ onOpen }: { onOpen: () => void }) {
       type="button"
       aria-label="Quick add"
       onClick={onOpen}
-      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/35 lg:bottom-8"
+      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/35 lg:hidden"
     >
       <Plus className="h-7 w-7" />
     </button>

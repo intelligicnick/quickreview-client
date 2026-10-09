@@ -701,13 +701,6 @@ export function QuickDesignPage() {
   }, []);
 
   const aspectOptions = hub?.options.aspectRatios ?? DEFAULT_ASPECT_RATIOS;
-  const serverPerchance = hub?.options.imageProvider === 'perchance';
-
-  const pictureHint = useMemo(
-    () => hub?.options.pictureModes.find((row) => row.id === picture)?.hint ?? '',
-    [hub, picture],
-  );
-
   const fieldClass =
     'mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-medium text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/15';
 
@@ -755,11 +748,7 @@ export function QuickDesignPage() {
     setBusy(true);
     setError(null);
     setPreviewPosterId(null);
-    setGenerateStatus(
-      serverPerchance
-        ? 'Generating on Perchance (realistic style)…'
-        : 'Preparing your design…',
-    );
+    setGenerateStatus('Generating your design…');
     try {
       const result = await api<{ poster: Poster; quota: Hub['quota'] }>(
         `/api/locations/${selected.id}/quickdesign/generate`,
@@ -848,7 +837,7 @@ export function QuickDesignPage() {
     <div>
       <h1 className="font-display text-2xl font-extrabold tracking-tight">QuickDesign</h1>
       <p className="mt-1 text-sm text-muted">
-        Pick a mood and offer — Perchance builds the photo background; your headline, offer, and contact details are layered on top.
+        Pick a mood and offer — photo or graphic backgrounds with your headline, offer, and contact details on top.
       </p>
 
       {!selected ? (
@@ -922,7 +911,7 @@ export function QuickDesignPage() {
                       picture === 'photos' ? 'bg-brand text-white' : 'text-muted'
                     }`}
                   >
-                    Photos
+                    Photo
                   </button>
                   <button
                     type="button"
@@ -931,11 +920,10 @@ export function QuickDesignPage() {
                       picture === 'design' ? 'bg-brand text-white' : 'text-muted'
                     }`}
                   >
-                    Design only
+                    Graphic
                   </button>
                 </div>
               </div>
-              {pictureHint ? <p className="mt-2 text-xs text-muted">{pictureHint}</p> : null}
               <label className="mt-4 block">
                 <span className="text-xs font-semibold text-muted">Generate size</span>
                 <select

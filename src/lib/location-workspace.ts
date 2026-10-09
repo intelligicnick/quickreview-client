@@ -38,6 +38,9 @@ export type WorkspaceSnapshot = {
     quickReview: ProductAccess;
     quickMenu: ProductAccess;
     quickConnect: ProductAccess;
+    quickDesign: ProductAccess;
+    quickScan: ProductAccess;
+    quickCrm: ProductAccess;
   } | null;
 };
 
@@ -88,6 +91,9 @@ export async function loadWorkspaceSnapshot(locationId: string): Promise<Workspa
         quickReview: ProductAccess & { pendingPaymentId?: string | null };
         quickMenu: ProductAccess & { pendingPaymentId?: string | null };
         quickConnect: ProductAccess & { pendingPaymentId?: string | null };
+        quickDesign: ProductAccess & { pendingPaymentId?: string | null };
+        quickScan: ProductAccess & { pendingPaymentId?: string | null };
+        quickCrm: ProductAccess & { pendingPaymentId?: string | null };
       };
     }>(`/api/billing/locations/${locationId}`),
   ]);
@@ -98,6 +104,9 @@ export async function loadWorkspaceSnapshot(locationId: string): Promise<Workspa
           quickReview: accessFromBilling(billingResult.value.products.quickReview),
           quickMenu: accessFromBilling(billingResult.value.products.quickMenu),
           quickConnect: accessFromBilling(billingResult.value.products.quickConnect),
+          quickDesign: accessFromBilling(billingResult.value.products.quickDesign),
+          quickScan: accessFromBilling(billingResult.value.products.quickScan),
+          quickCrm: accessFromBilling(billingResult.value.products.quickCrm),
         }
       : null;
 
@@ -147,9 +156,4 @@ export async function loadWorkspaceSnapshot(locationId: string): Promise<Workspa
   return { review, menu, connect, billing };
 }
 
-export function productStatusLabel(unlocked: boolean, status: string) {
-  if (unlocked) return 'Active';
-  if (status === 'PENDING_PAYMENT') return 'Pending payment';
-  if (status === 'EXPIRED') return 'Expired';
-  return 'No plan';
-}
+export { productStatusLabel } from '../components/ProductStatusBadge';

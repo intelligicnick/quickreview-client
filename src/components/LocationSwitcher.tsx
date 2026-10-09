@@ -2,6 +2,13 @@ import { ChevronDown, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLocationContext } from '../lib/location-context';
 
+function locationLabel(row: { name: string; businessName: string }) {
+  if (row.name.trim().toLowerCase() === row.businessName.trim().toLowerCase()) {
+    return row.businessName;
+  }
+  return `${row.businessName} › ${row.name}`;
+}
+
 export function LocationSwitcher({ compact = false }: { compact?: boolean }) {
   const { locations, selected, setSelectedId, loading } = useLocationContext();
 
@@ -23,27 +30,39 @@ export function LocationSwitcher({ compact = false }: { compact?: boolean }) {
     );
   }
 
+  const locationCount = locations.filter((l) => l.businessId === selected?.businessId).length;
+
   return (
-    <label className={compact ? 'block w-full max-w-xs' : 'relative inline-block max-w-md'}>
-      <span className="sr-only">Selected location</span>
-      <div className="relative">
-        <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-        <select
-          value={selected?.id ?? ''}
-          onChange={(event) => setSelectedId(event.target.value || null)}
-          className={`w-full appearance-none rounded-xl border border-line bg-white py-2.5 pl-9 pr-9 text-sm font-semibold text-ink outline-none ring-brand/20 focus:border-brand focus:ring-4 ${
-            compact ? 'min-h-11' : 'min-h-10'
-          }`}
-        >
-          {locations.map((row) => (
-            <option key={row.id} value={row.id}>
-              {row.name} · {row.businessName}
-              {row.status === 'INACTIVE' ? ' (inactive)' : ''}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-      </div>
-    </label>
+    <div className={compact ? 'block w-full max-w-xs' : 'relative inline-block max-w-md'}>
+      {!compact && selected ? (
+        <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted">Location</p>
+      ) : null}
+      <label className="block">
+        <span className="sr-only">Selected location</span>
+        <div className="relative">
+          <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <select
+            value={selected?.id ?? ''}
+            onChange={(event) => setSelectedId(event.target.value || null)}
+            className={`w-full appearance-none rounded-xl border border-line bg-white py-2 pl-9 pr-9 text-sm font-semibold text-ink outline-none ring-brand/20 focus:border-brand focus:ring-4 ${
+              compact ? 'min-h-11' : 'min-h-10'
+            }`}
+          >
+            {locations.map((row) => (
+              <option key={row.id} value={row.id}>
+                {locationLabel(row)}
+                {row.status === 'INACTIVE' ? ' (inactive)' : ''}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+        </div>
+      </label>
+      {!compact && selected && locationCount > 1 ? (
+        <p className="mt-1 text-xs text-muted">
+          {selected.name} · {locationCount} locations for this business
+        </p>
+      ) : null}
+    </div>
   );
 }

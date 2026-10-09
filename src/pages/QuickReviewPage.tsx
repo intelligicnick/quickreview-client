@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Copy, ExternalLink, Star } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { LockedQrGate } from '../components/LockedQrGate';
 import { ReviewGuestPreview } from '../components/review/ReviewGuestPreview';
 import { QrProductCard } from '../components/QrProductCard';
@@ -37,12 +37,14 @@ type InboxItem = {
   createdAt: string;
 };
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'qr', label: 'QR & link' },
-  { id: 'stats', label: 'Analytics' },
-  { id: 'inbox', label: 'Inbox' },
-  { id: 'settings', label: 'AI settings' },
-];
+function buildTabs(inboxCount: number): { id: Tab; label: string }[] {
+  return [
+    { id: 'qr', label: 'QR & link' },
+    { id: 'stats', label: 'Analytics' },
+    { id: 'inbox', label: inboxCount > 0 ? `Inbox (${inboxCount})` : 'Inbox' },
+    { id: 'settings', label: 'AI settings' },
+  ];
+}
 
 export function QuickReviewPage() {
   const { selected } = useLocationContext();
@@ -50,7 +52,6 @@ export function QuickReviewPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [keywordsText, setKeywordsText] = useState('');
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
@@ -81,17 +82,6 @@ export function QuickReviewPage() {
       cancelled = true;
     };
   }, [selected]);
-
-  async function copyLink() {
-    if (!summary) return;
-    try {
-      await navigator.clipboard.writeText(summary.publicUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
 
   async function saveKeywords() {
     if (!selected) return;
@@ -141,7 +131,7 @@ export function QuickReviewPage() {
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
           <div className="min-w-0">
           <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="QuickReview sections">
-            {TABS.map((item) => (
+            {buildTabs(inbox.length).map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -162,69 +152,56 @@ export function QuickReviewPage() {
               {!unlocked ? (
                 <LockedQrGate className="max-w-lg" />
               ) : (
-                <div className="flex flex-wrap gap-4">
+                <div className="max-w-xl">
                   <QrProductCard
-                    title="Review QR"
-                    purpose="Guest rating & Google handoff"
+                    title="Review QR & link"
+                    purpose="Guest rating, share link, Google handoff"
                     publicUrl={summary.publicUrl}
                     publicPath={summary.publicPath}
                     unlocked={unlocked}
                     statusLabel={productStatusLabel(unlocked, summary.reviewAccess.status)}
-                    manageHref="/app/marketplace"
-                    manageLabel="Order standee"
+                    manageHref="/app/qr"
+                    manageLabel="All QR codes"
                   />
-                  <div className="min-w-[17rem] flex-1 rounded-2xl border border-line bg-white p-5">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Review link</p>
-                    <p className="mt-2 break-all font-mono text-sm">{summary.publicUrl}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void copyLink()}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold"
-                      >
-                        {copied ? <Check className="h-4 w-4 text-brand" /> : <Copy className="h-4 w-4" />}
-                        {copied ? 'Copied' : 'Copy link'}
-                      </button>
-                      <a
-                        href={summary.publicPath}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand px-3 text-sm font-semibold text-white"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Preview
-                      </a>
-                    </div>
+                  <div
+                    className={`mt-4 rounded-2xl border p-4 ${
+                      summary.googleReviewUrl ? 'border-line bg-white' : 'border-red-200 bg-red-50'
+                    }`}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Google write-review URL</p>
+                    {summary.googleReviewUrl ? (
+                      <>
+                        <p className="mt-2 break-all font-mono text-sm">{summary.googleReviewUrl}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <a
+                            href={summary.googleReviewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-semibold"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Test
+                          </a>
+                          <Link
+                            to={`/app/businesses/${selected.businessId}`}
+                            className="inline-flex min-h-10 items-center rounded-xl bg-brand px-3 text-sm font-semibold text-white"
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm text-red-900">
+                        Missing — guests cannot open Google.{' '}
+                        <Link to={`/app/businesses/${selected.businessId}`} className="font-semibold underline">
+                          Add URL
+                        </Link>
+                      </p>
+                    )}
                     <p className="mt-3 text-xs text-muted">Code {summary.reviewCode}</p>
-                    <p className="mt-4 text-sm text-muted">
-                      All product QRs:{' '}
-                      <Link to="/app/qr" className="font-semibold text-brand">QR codes</Link>
-                    </p>
                   </div>
                 </div>
               )}
-              <div className="mt-4 min-w-[17rem] max-w-md rounded-2xl border border-line bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Google</p>
-                {summary.googleReviewUrl ? (
-                  <a
-                    href={summary.googleReviewUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand"
-                  >
-                    <Star className="h-4 w-4 fill-gold text-gold" />
-                    Write-review link ready
-                  </a>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">
-                    Add Google review URL in{' '}
-                    <Link to={`/app/businesses/${selected.businessId}`} className="font-semibold text-brand">
-                      business → location
-                    </Link>
-                    .
-                  </p>
-                )}
-              </div>
             </div>
           ) : null}
 

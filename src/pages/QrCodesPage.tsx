@@ -59,11 +59,21 @@ export function QrCodesPage() {
     <div>
       <PageHeader
         icon={QrCode}
-        title="QR codes"
+        title="QR codes & standees"
         description={
           selected
-            ? `Download and print codes for ${selected.name}. Guests scan once — you manage everything here.`
+            ? `Download and print codes for ${selected.name}. Link physical standees or order new ones from the marketplace.`
             : 'All public QR codes for your selected location in one place.'
+        }
+        actions={
+          selected ? (
+            <Link
+              to="/app/marketplace"
+              className="inline-flex min-h-10 items-center rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:border-brand/40"
+            >
+              Order standee
+            </Link>
+          ) : undefined
         }
       />
 
