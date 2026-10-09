@@ -37,7 +37,7 @@ export function AdminContactPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Contact</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight">Support inbox</h1>
       <p className="mt-1 text-sm text-muted">Messages from the site contact form.</p>
       <label className="mt-4 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />

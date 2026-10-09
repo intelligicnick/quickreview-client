@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import type { PublicUser } from '../../lib/types';
@@ -26,6 +26,17 @@ export function AdminUsersPage() {
   }, [query]);
 
   useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const next = new URLSearchParams(params);
+      const value = draft.trim();
+      if (value) next.set('q', value);
+      else next.delete('q');
+      if (next.toString() !== params.toString()) setParams(next, { replace: true });
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [draft, params, setParams]);
+
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       setLoading(true);
@@ -36,11 +47,11 @@ export function AdminUsersPage() {
       try {
         const rows = await api<AdminUser[]>(`/api/admin/users${suffix}`);
         if (!cancelled) {
-          setUsers(rows);
+          setUsers(rows.filter((person) => !person.isSuperAdmin));
           setError(null);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Could not load users');
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Could not load merchants');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -49,15 +60,6 @@ export function AdminUsersPage() {
       cancelled = true;
     };
   }, [query, status]);
-
-  function onSearch(event: FormEvent) {
-    event.preventDefault();
-    const next = new URLSearchParams(params);
-    const value = draft.trim();
-    if (value) next.set('q', value);
-    else next.delete('q');
-    setParams(next);
-  }
 
   function setStatus(nextStatus: string) {
     const next = new URLSearchParams(params);
@@ -68,19 +70,14 @@ export function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Users</h1>
-      <p className="mt-1 text-sm text-muted">Search accounts, then open one to disable it or enter their panel.</p>
-      <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Name or email"
-          className="min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base outline-none ring-brand/20 focus:border-brand focus:ring-4 sm:text-sm"
-        />
-        <button type="submit" className="min-h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark">
-          Search
-        </button>
-      </form>
+      <h1 className="text-2xl font-extrabold tracking-tight">Merchants</h1>
+      <p className="mt-1 text-sm text-muted">Search accounts, then open Merchant 360 to verify payments or enter their panel.</p>
+      <input
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder="Search as you type — name or email"
+        className="mt-5 min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base outline-none ring-brand/20 focus:border-brand focus:ring-4 sm:text-sm"
+      />
       <div className="mt-3 flex flex-wrap gap-2">
         {FILTERS.map((filter) => (
           <button
@@ -99,14 +96,14 @@ export function AdminUsersPage() {
       {loading ? <p className="mt-6 text-sm text-muted">Loading…</p> : null}
       {!loading && users.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-8 text-center">
-          <p className="font-semibold">No accounts match</p>
+          <p className="font-semibold">No merchants match</p>
         </div>
       ) : null}
       <div className="mt-4 space-y-3">
         {users.map((person) => (
           <Link
             key={person.id}
-            to={`/admin/users/${person.id}`}
+            to={`/admin/merchants/${person.id}`}
             className="block rounded-2xl border border-line bg-white p-4 hover:border-brand/40"
           >
             <div className="flex items-start justify-between gap-3">
@@ -120,8 +117,7 @@ export function AdminUsersPage() {
             </div>
             <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">
               {person.isActive ? 'Active' : 'Disabled'}
-              {person.emailVerified ? '' : ' · Email not verified'}
-              {person.isSuperAdmin ? ' · Super admin' : ''}
+              {person.emailVerified ? ' · Email verified' : ' · Email not verified'}
             </p>
           </Link>
         ))}

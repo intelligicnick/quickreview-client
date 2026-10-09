@@ -136,7 +136,7 @@ export function AdminLocationsPage() {
     <div>
       <h1 className="text-2xl font-extrabold tracking-tight">Locations</h1>
       <p className="mt-1 text-sm text-muted">
-        GBP imports: slug, food / services / shop mode, metrics refresh, transfer, and delete.
+        Every merchant location — search by business or site name, edit slug and menu mode.
       </p>
       <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
         <input

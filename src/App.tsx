@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AdminShell } from './components/AdminShell';
 import { AppShell } from './components/AppShell';
 import { CrmLayout } from './components/crm/CrmLayout';
@@ -12,6 +12,7 @@ import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminContactPage } from './pages/admin/AdminContactPage';
 import { AdminMarketplacePage } from './pages/admin/AdminMarketplacePage';
 import { AdminQrBatchesPage } from './pages/admin/AdminQrBatchesPage';
+import { AdminActivityPage } from './pages/admin/AdminActivityPage';
 import { AdminSubscriptionsPage } from './pages/admin/AdminSubscriptionsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { BusinessDetailPage } from './pages/BusinessDetailPage';
@@ -90,6 +91,11 @@ function PublicEntry() {
   const { user } = useAuth();
   if (user) return <Navigate to={homePath(user)} replace />;
   return <LandingPage />;
+}
+
+function AdminMerchantRedirect() {
+  const { userId } = useParams();
+  return <Navigate to={userId ? `/admin/merchants/${userId}` : '/admin/merchants'} replace />;
 }
 
 function BootScreen() {
@@ -190,13 +196,17 @@ export default function App() {
         }
       >
         <Route index element={<AdminHomePage />} />
-        <Route path="users" element={<AdminUsersPage />} />
-        <Route path="users/:userId" element={<AdminUserPage />} />
+        <Route path="merchants" element={<AdminUsersPage />} />
+        <Route path="merchants/:userId" element={<AdminUserPage />} />
+        <Route path="users" element={<Navigate to="/admin/merchants" replace />} />
+        <Route path="users/:userId" element={<AdminMerchantRedirect />} />
         <Route path="locations" element={<AdminLocationsPage />} />
-        <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+        <Route path="payments" element={<AdminSubscriptionsPage />} />
+        <Route path="subscriptions" element={<Navigate to="/admin/payments" replace />} />
         <Route path="qr" element={<AdminQrBatchesPage />} />
         <Route path="marketplace" element={<AdminMarketplacePage />} />
         <Route path="contact" element={<AdminContactPage />} />
+        <Route path="activity" element={<AdminActivityPage />} />
       </Route>
       <Route path="*" element={<PublicEntry />} />
     </Routes>

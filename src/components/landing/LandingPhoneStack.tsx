@@ -8,7 +8,7 @@ const phoneWrap = 'pointer-events-none w-[min(100%,220px)] shrink-0 scale-[0.92]
 export function LandingPhoneStack() {
   return (
     <div
-      className="relative mx-auto flex h-[min(420px,70vw)] w-full max-w-lg items-end justify-center sm:h-[440px] sm:max-w-none"
+      className="relative mx-auto flex h-[min(300px,52vw)] w-full max-w-lg items-end justify-center sm:h-[400px] md:h-[440px] sm:max-w-none"
       aria-hidden
     >
       <div

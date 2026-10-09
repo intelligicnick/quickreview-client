@@ -1,40 +1,83 @@
 import {
-  ArrowLeft,
+  Activity,
   CreditCard,
   LayoutDashboard,
   LogOut,
   MapPin,
   Menu,
   MessageSquare,
+  Package,
   QrCode,
   ShoppingBag,
+  Store,
   Users,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { BrandMark } from './BrandMark';
 
+type NavCounts = {
+  desk: number;
+  supportInbox: number;
+  payments: number;
+  hardwareOrders: number;
+};
+
 const NAV_GROUPS = [
   {
-    label: 'Overview',
-    items: [{ to: '/admin', label: 'Desk', icon: LayoutDashboard, end: true as const }],
-  },
-  {
-    label: 'Platform',
+    label: 'Work',
     items: [
-      { to: '/admin/users', label: 'Users', icon: Users, end: false as const },
-      { to: '/admin/locations', label: 'Locations', icon: MapPin, end: false as const },
-      { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard, end: false as const },
+      { to: '/admin', label: 'Desk', icon: LayoutDashboard, end: true as const, countKey: 'desk' as const },
+      {
+        to: '/admin/contact',
+        label: 'Support inbox',
+        icon: MessageSquare,
+        end: false as const,
+        countKey: 'supportInbox' as const,
+      },
     ],
   },
   {
-    label: 'Operations',
+    label: 'Merchants',
     items: [
-      { to: '/admin/qr', label: 'QR batches', icon: QrCode, end: false as const },
-      { to: '/admin/marketplace', label: 'Marketplace', icon: ShoppingBag, end: false as const },
-      { to: '/admin/contact', label: 'Contact', icon: MessageSquare, end: false as const },
+      { to: '/admin/merchants', label: 'Merchants', icon: Users, end: false as const },
+      { to: '/admin/locations', label: 'Locations', icon: MapPin, end: false as const },
+    ],
+  },
+  {
+    label: 'Money',
+    items: [
+      {
+        to: '/admin/payments',
+        label: 'Payments',
+        icon: CreditCard,
+        end: false as const,
+        countKey: 'payments' as const,
+      },
+      { to: '/admin/payments#plans', label: 'Plans & prices', icon: Store, end: false as const },
+    ],
+  },
+  {
+    label: 'Fulfilment',
+    items: [
+      {
+        to: '/admin/marketplace',
+        label: 'Hardware orders',
+        icon: Package,
+        end: false as const,
+        countKey: 'hardwareOrders' as const,
+      },
+      { to: '/admin/qr', label: 'QR stock', icon: QrCode, end: false as const },
+      { to: '/admin/marketplace#catalogue', label: 'Store catalogue', icon: ShoppingBag, end: false as const },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { to: '/admin/activity', label: 'Activity log', icon: Activity, end: false as const },
     ],
   },
 ];
@@ -44,9 +87,16 @@ export function AdminShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [counts, setCounts] = useState<NavCounts | null>(null);
 
   useEffect(() => {
     setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    void api<NavCounts>('/api/admin/nav-counts')
+      .then(setCounts)
+      .catch(() => setCounts(null));
   }, [location.pathname]);
 
   useEffect(() => {
@@ -126,34 +176,36 @@ export function AdminShell() {
                 {group.label}
               </p>
               <div className="flex flex-col gap-0.5">
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.end}
-                    className={({ isActive }) =>
-                      `flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${
-                        isActive ? 'bg-brand/10 text-brand-dark' : 'text-muted hover:bg-paper hover:text-ink'
-                      }`
-                    }
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {item.label}
-                  </NavLink>
-                ))}
+                {group.items.map((item) => {
+                  const badge =
+                    item.countKey && counts && counts[item.countKey] > 0 ? counts[item.countKey] : null;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        `flex min-h-10 items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-medium ${
+                          isActive ? 'bg-brand/10 text-brand-dark' : 'text-muted hover:bg-paper hover:text-ink'
+                        }`
+                      }
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {item.label}
+                      </span>
+                      {badge ? (
+                        <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-white">{badge}</span>
+                      ) : null}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}
         </nav>
         <div className="shrink-0 border-t border-line px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <NavLink
-            to="/app"
-            className="flex min-h-11 items-center gap-2 text-sm font-medium text-muted hover:text-ink"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Merchant panel
-          </NavLink>
-          <p className="mt-3 truncate text-sm font-semibold">{user?.name}</p>
+          <p className="truncate text-sm font-semibold">{user?.name}</p>
           <p className="truncate text-xs text-muted">{user?.email}</p>
           <button
             type="button"

@@ -4,8 +4,8 @@ import { Menu, X } from 'lucide-react';
 import { BrandMark } from '../BrandMark';
 
 const LINKS = [
+  { href: '#how-it-works', label: 'How it works' },
   { href: '#features', label: 'Features' },
-  { href: '#advantages', label: 'Why us' },
   { href: '#products', label: 'Products' },
 ];
 

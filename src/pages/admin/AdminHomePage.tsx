@@ -1,60 +1,47 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import type { PublicUser } from '../../lib/types';
-
-type Desk = {
-  counts: {
-    pendingPayments: number;
-    noPlanShops: number;
-    ordersToShip: number;
-    contactMessages: number;
-  };
-  pendingPayments: {
-    id: string;
-    amountInr: number;
-    provider: string | null;
-    locationName: string | null;
-    userEmail: string | null;
-  }[];
-  noPlanShops: { id: string; name: string; businessName: string }[];
-  ordersToShip: { id: string; status: string; businessNameSnapshot: string; locationName: string | null }[];
-  contactMessages: { id: string; name: string; email: string; message: string }[];
+import { adminWhen, inr } from '../../lib/admin-ui';
+type WorkItem = {
+  id: string;
+  kind: 'PAYMENT' | 'ORDER' | 'SUPPORT' | 'ACCOUNT';
+  title: string;
+  detail: string;
+  createdAt: string;
+  href: string;
+  actionLabel: string;
 };
 
 type Overview = {
-  counts: {
-    users: number;
-    unverified: number;
-    disabled: number;
-    businesses: number;
-    locations: number;
-    businessesWithoutLocations: number;
+  health: {
+    mrrInr: number;
+    payingLocations: number;
+    merchantsTotal: number;
+    trialsRunning: number;
+    trialsEndingIn3Days: number;
+    trialsEndingSoon: {
+      locationId: string;
+      locationName: string;
+      planName: string;
+      endDate: string;
+    }[];
   };
-  unverifiedUsers: PublicUser[];
-  recentSignups: PublicUser[];
-  businessesWithoutLocations: {
-    id: string;
-    name: string;
-    createdAt: string;
-    owner: { id: string; email: string; name: string } | null;
-  }[];
-  recentActions: { id: string; action: string; summary: string; createdAt: string }[];
-  desk: Desk;
+  navCounts: { desk: number };
+  desk: { workQueue: WorkItem[] };
+  recentActions: { id: string; summary: string; createdAt: string }[];
 };
 
-function when(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
+const KIND_LABEL: Record<WorkItem['kind'], string> = {
+  PAYMENT: 'Payment',
+  ORDER: 'Order',
+  SUPPORT: 'Support',
+  ACCOUNT: 'Account',
+};
 
 export function AdminHomePage() {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | WorkItem['kind']>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -71,170 +58,103 @@ export function AdminHomePage() {
     };
   }, []);
 
-  const desk = data?.desk;
-
-  const opsCards = desk
-    ? [
-        { label: 'Pending payments', value: desk.counts.pendingPayments, to: '/admin/subscriptions' },
-        { label: 'No active plan', value: desk.counts.noPlanShops, to: '/admin/locations' },
-        { label: 'Orders to ship', value: desk.counts.ordersToShip, to: '/admin/marketplace' },
-        { label: 'Contact inbox', value: desk.counts.contactMessages, to: '/admin/contact' },
-      ]
-    : [];
-
-  const cards = data
-    ? [
-        { label: 'Users', value: data.counts.users, to: '/admin/users' },
-        { label: 'Unverified', value: data.counts.unverified, to: '/admin/users?status=unverified' },
-        { label: 'Disabled', value: data.counts.disabled, to: '/admin/users?status=disabled' },
-        { label: 'Locations', value: data.counts.locations, to: '/admin/locations' },
-      ]
-    : [];
+  const queue = data?.desk.workQueue ?? [];
+  const filtered = filter === 'all' ? queue : queue.filter((row) => row.kind === filter);
 
   return (
     <div>
       <h1 className="text-2xl font-extrabold tracking-tight">Desk</h1>
-      <p className="mt-1 max-w-2xl text-sm text-muted">
-        Pending payments, shops without a plan, marketplace shipments, and contact messages — then accounts and
-        locations.
-      </p>
+      <p className="mt-1 text-sm text-muted">What needs you today — then revenue health and recent admin actions.</p>
       {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
       {!data && !error ? <p className="mt-6 text-sm text-muted">Loading…</p> : null}
-      {data && desk ? (
+      {data ? (
         <>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {opsCards.map((card) => (
-              <Link
-                key={card.label}
-                to={card.to}
-                className="rounded-2xl border border-brand/30 bg-brand/5 p-5 hover:border-brand/50"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{card.label}</p>
-                <p className="mt-2 text-3xl font-extrabold">{card.value}</p>
-              </Link>
-            ))}
+            <HealthCard
+              label="Monthly recurring revenue"
+              value={inr(data.health.mrrInr)}
+              hint="from paid plans"
+            />
+            <HealthCard
+              label="Paying locations"
+              value={`${data.health.payingLocations}`}
+              hint={`${data.health.merchantsTotal} merchants total`}
+            />
+            <HealthCard
+              label="Trials running"
+              value={`${data.health.trialsRunning}`}
+              hint={
+                data.health.trialsEndingIn3Days > 0
+                  ? `${data.health.trialsEndingIn3Days} end in 3 days`
+                  : 'none ending soon'
+              }
+            />
+            <HealthCard label="Needs you" value={`${data.navCounts.desk}`} hint="open queue items" />
           </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <QueueSection
-              title="Pending payments"
-              to="/admin/subscriptions"
-              empty="All caught up."
-              hasItems={desk.pendingPayments.length > 0}
-            >
-              {desk.pendingPayments.map((row) => (
-                <li key={row.id}>
-                  <span className="font-semibold">₹{row.amountInr}</span>
-                  <span className="mt-0.5 block text-sm text-muted">
-                    {row.locationName ?? '—'} · {row.userEmail ?? '—'}
-                  </span>
-                </li>
-              ))}
-            </QueueSection>
-            <QueueSection
-              title="No plan"
-              to="/admin/locations"
-              empty="Every location has live access."
-              hasItems={desk.noPlanShops.length > 0}
-            >
-              {desk.noPlanShops.map((row) => (
-                <li key={row.id}>
-                  <span className="font-semibold">{row.name}</span>
-                  <span className="mt-0.5 block text-sm text-muted">{row.businessName}</span>
-                </li>
-              ))}
-            </QueueSection>
-            <QueueSection
-              title="Orders to ship"
-              to="/admin/marketplace"
-              empty="No open hardware orders."
-              hasItems={desk.ordersToShip.length > 0}
-            >
-              {desk.ordersToShip.map((row) => (
-                <li key={row.id}>
-                  <span className="font-semibold">{row.businessNameSnapshot}</span>
-                  <span className="mt-0.5 block text-sm text-muted">{row.status} · {row.locationName ?? '—'}</span>
-                </li>
-              ))}
-            </QueueSection>
-            <QueueSection
-              title="Contact"
-              to="/admin/contact"
-              empty="Inbox clear."
-              hasItems={desk.contactMessages.length > 0}
-            >
-              {desk.contactMessages.map((row) => (
-                <li key={row.id}>
-                  <span className="font-semibold">{row.name}</span>
-                  <span className="mt-0.5 block text-sm text-muted">{row.message}</span>
-                </li>
-              ))}
-            </QueueSection>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {cards.map((card) => (
-              <Link key={card.label} to={card.to} className="rounded-2xl border border-line bg-white p-5 hover:border-brand/40">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{card.label}</p>
-                <p className="mt-2 text-3xl font-extrabold">{card.value}</p>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl border border-line bg-white p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-bold">Waiting on email</h2>
-                <Link to="/admin/users?status=unverified" className="text-sm font-semibold text-brand">
-                  All
-                </Link>
+
+          <section className="mt-6 rounded-2xl border border-line bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-bold">Work queue</h2>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {(['all', 'PAYMENT', 'ORDER', 'SUPPORT', 'ACCOUNT'] as const).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFilter(key)}
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      filter === key ? 'bg-ink text-white' : 'bg-paper text-muted ring-1 ring-line'
+                    }`}
+                  >
+                    {key === 'all' ? 'All' : KIND_LABEL[key]}
+                  </button>
+                ))}
               </div>
-              {data.unverifiedUsers.length === 0 ? (
-                <p className="mt-4 text-sm text-muted">No unverified accounts.</p>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {data.unverifiedUsers.map((person) => (
-                    <li key={person.id}>
-                      <Link to={`/admin/users/${person.id}`} className="block hover:text-brand">
-                        <span className="font-semibold">{person.name}</span>
-                        <span className="mt-0.5 block text-sm text-muted">{person.email}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-            <section className="rounded-2xl border border-line bg-white p-5">
-              <h2 className="font-bold">Shops with no location</h2>
-              <p className="mt-1 text-sm text-muted">{data.counts.businessesWithoutLocations} total</p>
-              {data.businessesWithoutLocations.length === 0 ? (
-                <p className="mt-4 text-sm text-muted">Every business has a location.</p>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {data.businessesWithoutLocations.map((business) => (
-                    <li key={business.id}>
-                      <p className="font-semibold">{business.name}</p>
-                      <p className="text-sm text-muted">{business.owner?.email ?? 'No owner'}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl border border-line bg-white p-5">
-              <h2 className="font-bold">Recent signups</h2>
-              <ul className="mt-4 space-y-3">
-                {data.recentSignups.map((person) => (
-                  <li key={person.id} className="flex items-start justify-between gap-3">
-                    <Link to={`/admin/users/${person.id}`} className="min-w-0 hover:text-brand">
-                      <span className="block truncate font-semibold">{person.name}</span>
-                      <span className="block truncate text-sm text-muted">{person.email}</span>
+            </div>
+            {filtered.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">When this list is empty you&apos;re done for the day.</p>
+            ) : (
+              <ul className="mt-4 divide-y divide-line">
+                {filtered.map((row) => (
+                  <li key={row.id} className="flex flex-wrap items-start justify-between gap-3 py-4 first:pt-0">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted">{KIND_LABEL[row.kind]}</p>
+                      <p className="mt-0.5 font-semibold">{row.title}</p>
+                      <p className="mt-0.5 text-sm text-muted">{row.detail}</p>
+                      <p className="mt-1 text-xs text-muted">{adminWhen(row.createdAt)}</p>
+                    </div>
+                    <Link
+                      to={row.href}
+                      className="min-h-10 shrink-0 rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark"
+                    >
+                      {row.actionLabel}
                     </Link>
-                    <span className="shrink-0 text-xs text-muted">{when(person.createdAt)}</span>
                   </li>
                 ))}
               </ul>
+            )}
+          </section>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <section className="rounded-2xl border border-line bg-white p-5">
+              <h2 className="font-bold">Trials ending this week</h2>
+              {data.health.trialsEndingSoon.length === 0 ? (
+                <p className="mt-4 text-sm text-muted">No trials ending in the next 3 days.</p>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {data.health.trialsEndingSoon.map((row) => (
+                    <li key={`${row.locationId}-${row.planName}`}>
+                      <p className="font-semibold">{row.locationName}</p>
+                      <p className="text-sm text-muted">{row.planName} · ends {row.endDate}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
             <section className="rounded-2xl border border-line bg-white p-5">
-              <h2 className="font-bold">Recent actions</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">Activity log</h2>
+                <Link to="/admin/activity" className="text-sm font-semibold text-brand">All</Link>
+              </div>
               {data.recentActions.length === 0 ? (
                 <p className="mt-4 text-sm text-muted">Nothing logged yet.</p>
               ) : (
@@ -242,7 +162,7 @@ export function AdminHomePage() {
                   {data.recentActions.map((event) => (
                     <li key={event.id} className="flex items-start justify-between gap-3">
                       <p className="text-sm">{event.summary}</p>
-                      <span className="shrink-0 text-xs text-muted">{when(event.createdAt)}</span>
+                      <span className="shrink-0 text-xs text-muted">{adminWhen(event.createdAt)}</span>
                     </li>
                   ))}
                 </ul>
@@ -255,30 +175,12 @@ export function AdminHomePage() {
   );
 }
 
-function QueueSection({
-  title,
-  to,
-  empty,
-  hasItems,
-  children,
-}: {
-  title: string;
-  to: string;
-  empty: string;
-  hasItems: boolean;
-  children: ReactNode;
-}) {
+function HealthCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <section className="rounded-2xl border border-line bg-white p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-bold">{title}</h2>
-        <Link to={to} className="text-sm font-semibold text-brand">Open</Link>
-      </div>
-      {!hasItems ? (
-        <p className="mt-4 text-sm text-muted">{empty}</p>
-      ) : (
-        <ul className="mt-4 space-y-3">{children}</ul>
-      )}
-    </section>
+    <div className="rounded-2xl border border-line bg-white p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-2 text-2xl font-extrabold">{value}</p>
+      <p className="mt-1 text-sm text-muted">{hint}</p>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Clock,
+  IdCard,
   MapPin,
   MessageSquare,
   Palette,
@@ -27,6 +28,31 @@ import { ProductFloatVisual } from '../components/landing/visuals/ProductFloatVi
 import { QrStandeeVisual } from '../components/landing/visuals/QrStandeeVisual';
 import { ReviewStarsVisual } from '../components/landing/visuals/ReviewStarsVisual';
 import { StatsLineChartVisual } from '../components/landing/visuals/StatsLineChartVisual';
+import {
+  ConnectCardVisual,
+  CrmFollowUpsVisual,
+} from '../components/landing/visuals/ConnectCrmVisuals';
+
+const HERO_STATS = [
+  { value: '5 min', label: 'to go live' },
+  { value: '1 QR', label: 'all guest pages' },
+  { value: 'Free', label: 'workspace' },
+] as const;
+
+const STEPS = [
+  {
+    title: 'Import your shop',
+    description: 'Pull name, hours, and location from Google Business Profile.',
+  },
+  {
+    title: 'Print your QR',
+    description: 'Reviews, menu, and digital card — routed from one code.',
+  },
+  {
+    title: 'Follow up in CRM',
+    description: 'Track leads, quotations, and reminders from your phone.',
+  },
+] as const;
 
 const TRUST_ITEMS = [
   { icon: MapPin, label: 'Google import' },
@@ -50,31 +76,70 @@ export function LandingPage() {
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 Built for local business
               </p>
-              <h1 className="font-display mt-5 text-3xl font-extrabold leading-[1.1] tracking-tight sm:text-4xl lg:text-[2.75rem]">
-                Grow your shop with QR, reviews, and CRM
+              <h1 className="font-display mt-5 text-[1.75rem] font-extrabold leading-[1.12] tracking-tight sm:text-4xl lg:text-[2.85rem]">
+                Turn every scan into reviews, menus, and repeat customers
               </h1>
-              <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/85 sm:text-base">
-                Import from Google Business, publish guest pages in minutes, and manage follow-ups in
-                one simple workspace — QuickReview, Quick Commerce, QuickConnect, and Quick CRM.
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/88 sm:text-base">
+                Import from Google Business, publish branded guest pages in minutes, and run
+                follow-ups from one workspace — no juggling five different apps.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link
                   to="/register"
-                  className="inline-flex min-h-11 items-center rounded-2xl bg-ink px-6 text-sm font-semibold text-white shadow-lg transition hover:opacity-95"
+                  className="inline-flex min-h-11 items-center rounded-2xl bg-white px-6 text-sm font-semibold text-brand shadow-[0_12px_32px_rgba(0,0,0,0.18)] transition hover:bg-white/95"
                 >
                   Get started free
                 </Link>
                 <a
-                  href="#features"
-                  className="inline-flex min-h-11 items-center rounded-2xl border border-white/30 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
+                  href="#how-it-works"
+                  className="inline-flex min-h-11 items-center rounded-2xl border border-white/35 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
-                  See features
+                  How it works
                 </a>
               </div>
+              <dl className="mt-8 grid max-w-md grid-cols-3 gap-3 border-t border-white/20 pt-6 sm:max-w-lg sm:gap-4">
+                {HERO_STATS.map(({ value, label }) => (
+                  <div key={label}>
+                    <dt className="font-display text-lg font-extrabold tracking-tight sm:text-xl">
+                      {value}
+                    </dt>
+                    <dd className="mt-0.5 text-[11px] font-medium text-white/75 sm:text-xs">
+                      {label}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <div className="mt-10 lg:mt-0">
+            <div className="mt-8 hidden animate-fade-up-delay sm:block sm:mt-10 lg:mt-0">
               <LandingPhoneStack />
             </div>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="scroll-mt-20 border-b border-line bg-white py-12 sm:py-14">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <LandingSectionHeader
+              eyebrow="How it works"
+              title="Live in three steps"
+              subtitle="From Google import to printed QR and CRM follow-ups — the same flow for cafés, salons, and counters."
+            />
+            <ol className="mt-10 grid gap-6 md:grid-cols-3">
+              {STEPS.map((step, index) => (
+                <li
+                  key={step.title}
+                  className="relative rounded-2xl border border-line bg-paper/80 p-5 sm:p-6"
+                >
+                  <span
+                    className="font-display inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-extrabold text-white"
+                    aria-hidden
+                  >
+                    {index + 1}
+                  </span>
+                  <h3 className="mt-4 font-bold text-ink">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{step.description}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
@@ -97,6 +162,18 @@ export function LandingPage() {
                 title="Quick Commerce menus"
                 description="Publish a mobile menu and catalogue guests can browse from your QR — prices, veg badges, and photos included."
                 visual={<MenuStackVisual />}
+              />
+              <LandingHighlightCard
+                icon={IdCard}
+                title="QuickConnect digital cards"
+                description="Share a tap-to-save contact card from the same QR — name, phone, and role without paper business cards."
+                visual={<ConnectCardVisual />}
+              />
+              <LandingHighlightCard
+                icon={Users}
+                title="Quick CRM follow-ups"
+                description="Log customers, quotations, and reminders on mobile — so nothing falls through after the first visit."
+                visual={<CrmFollowUpsVisual />}
               />
             </div>
           </div>
@@ -257,12 +334,20 @@ export function LandingPage() {
               <p className="mt-3 text-sm text-muted sm:text-base">
                 Create an account, import your location, and publish your first guest page today.
               </p>
-              <Link
-                to="/register"
-                className="mt-8 inline-flex min-h-12 items-center rounded-2xl bg-ink px-8 text-sm font-semibold text-white transition hover:opacity-90"
-              >
-                Get started
-              </Link>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/register"
+                  className="inline-flex min-h-12 items-center rounded-2xl bg-ink px-8 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Get started
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-12 items-center rounded-2xl border border-line bg-white px-8 text-sm font-semibold text-ink transition hover:bg-paper"
+                >
+                  Log in
+                </Link>
+              </div>
             </div>
           </div>
         </section>

@@ -144,9 +144,31 @@ textarea.field {
 }
 
 .landing-hero-panel {
+  position: relative;
+  isolation: isolate;
   background:
     radial-gradient(ellipse 70% 80% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
     linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dark) 100%);
+}
+
+.landing-hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.14) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+.landing-hero-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.75s ease-out 0.12s both;
 }
 
 .landing-mesh {
