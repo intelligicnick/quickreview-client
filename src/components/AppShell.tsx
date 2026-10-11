@@ -47,7 +47,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: 'Sell & follow up',
     items: [
       { to: '/app/quickcommerce', label: 'QuickCommerce', icon: UtensilsCrossed, matchPrefix: '/app/quickcommerce' },
-      { to: CRM_BASE, label: 'QuickCRM', icon: Users, matchPrefix: CRM_BASE },
+      { to: CRM_BASE, label: 'CRM', icon: Users, matchPrefix: CRM_BASE },
       { to: '/app/quickscan', label: 'QuickScan', icon: ScanLine },
     ],
   },

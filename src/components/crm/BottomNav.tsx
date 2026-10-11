@@ -14,7 +14,7 @@ export function BottomNav() {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur touch-manipulation pb-[env(safe-area-inset-bottom)] lg:hidden"
-      aria-label="Quick CRM"
+      aria-label="QuickReview CRM"
     >
       <ul className="mx-auto flex max-w-lg">
         {ITEMS.map((item) => (

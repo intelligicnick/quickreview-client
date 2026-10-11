@@ -44,7 +44,7 @@ export function CrmSubscriptionGate({ children }: { children: ReactNode }) {
   if (!selected) {
     return (
       <div>
-        <p className="text-sm text-muted">Select a location at the top to use Quick CRM.</p>
+        <p className="text-sm text-muted">Select a location at the top to use QuickReview CRM.</p>
       </div>
     );
   }
@@ -54,7 +54,7 @@ export function CrmSubscriptionGate({ children }: { children: ReactNode }) {
   }
 
   if (!access) {
-    return <p className="text-sm text-muted">Loading Quick CRM…</p>;
+    return <p className="text-sm text-muted">Loading QuickReview…</p>;
   }
 
   if (!access.unlocked) {
@@ -63,9 +63,9 @@ export function CrmSubscriptionGate({ children }: { children: ReactNode }) {
         <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
           <Users className="h-6 w-6" />
         </span>
-        <h2 className="mt-4 text-lg font-bold">Quick CRM needs a plan</h2>
+        <h2 className="mt-4 text-lg font-bold">CRM needs a plan</h2>
         <p className="mt-2 text-sm text-muted">
-          Customers, quotations, and follow-ups unlock with an active Quick CRM subscription for{' '}
+          Customers, quotations, and follow-ups unlock with an active CRM plan on QuickReview for{' '}
           <span className="font-semibold text-ink">{selected.name}</span>.
         </p>
         <Link

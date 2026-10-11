@@ -36,7 +36,7 @@ export function CrmChrome() {
   return (
     <div className="mb-4 space-y-3 lg:mb-5">
       <div className="hidden lg:block">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted">QuickCRM</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-muted">QuickReview</p>
         <h1 className="font-display text-xl font-bold">Customers · quotes · invoices</h1>
       </div>
       <nav className="flex gap-1 overflow-x-auto pb-1" aria-label="CRM sections">

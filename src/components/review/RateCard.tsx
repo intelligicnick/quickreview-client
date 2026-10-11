@@ -37,8 +37,9 @@ export function RateCard({
           ) : null}
           <BrandMark className="!h-8 max-w-[9rem]" />
         </div>
-        <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-brand-dark">
-          Verified Feedback
+        <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-brand-dark sm:px-2.5 sm:py-1 sm:text-[11px]">
+          <span className="max-[380px]:hidden">Verified Feedback</span>
+          <span className="hidden max-[380px]:inline">Verified</span>
         </span>
       </div>
 

@@ -56,7 +56,7 @@ export function DashboardPage() {
     const products: { key: string; name: string; access: { unlocked: boolean; status: string } }[] = [
       { key: 'review', name: 'QuickReview', access: billing.quickReview },
       { key: 'menu', name: 'QuickCommerce', access: billing.quickMenu },
-      { key: 'crm', name: 'QuickCRM', access: billing.quickCrm },
+      { key: 'crm', name: 'CRM', access: billing.quickCrm },
       { key: 'connect', name: 'QuickConnect', access: billing.quickConnect },
       { key: 'design', name: 'QuickDesign', access: billing.quickDesign },
       { key: 'scan', name: 'QuickScan', access: billing.quickScan },
@@ -129,7 +129,7 @@ export function DashboardPage() {
         detail: 'Menu, catalogue & Quick Revisit',
       },
       {
-        title: 'QuickCRM',
+        title: 'CRM',
         icon: Users,
         href: CRM_BASE,
         unlocked: billing.quickCrm.unlocked,

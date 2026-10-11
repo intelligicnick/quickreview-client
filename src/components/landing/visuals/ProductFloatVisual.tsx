@@ -4,7 +4,7 @@ const TILES = [
   { title: 'QuickReview', sub: '4.8★ avg', icon: Star, className: 'landing-float-tile top-[8%] left-[6%] -rotate-3' },
   { title: 'Quick Commerce', sub: '42 items', icon: UtensilsCrossed, className: 'landing-float-tile top-[4%] right-[4%] rotate-2' },
   { title: 'QuickConnect', sub: '12 leads', icon: IdCard, className: 'landing-float-tile bottom-[28%] left-[2%] rotate-1' },
-  { title: 'Quick CRM', sub: '8 follow-ups', icon: Users, className: 'landing-float-tile bottom-[12%] right-[6%] -rotate-2' },
+  { title: 'CRM', sub: '8 follow-ups', icon: Users, className: 'landing-float-tile bottom-[12%] right-[6%] -rotate-2' },
   { title: 'QuickDesign', sub: 'Posters', icon: Palette, className: 'landing-float-tile bottom-[4%] left-[28%] rotate-0' },
 ];
 

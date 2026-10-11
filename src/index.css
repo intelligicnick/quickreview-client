@@ -146,8 +146,10 @@ textarea.field {
 .landing-hero-panel {
   position: relative;
   isolation: isolate;
+  box-shadow: 0 24px 80px rgba(26, 109, 255, 0.22);
   background:
-    radial-gradient(ellipse 70% 80% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse 55% 65% at 0% 100%, rgba(255, 255, 255, 0.12), transparent 50%),
+    radial-gradient(ellipse 70% 80% at 100% 0%, rgba(255, 255, 255, 0.2), transparent 55%),
     linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dark) 100%);
 }
 

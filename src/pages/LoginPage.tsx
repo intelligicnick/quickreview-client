@@ -37,7 +37,7 @@ export function LoginPage() {
   return (
     <AuthCard
       title="Welcome back"
-      subtitle="Sign in to Quick CRM — simple CRM for small business."
+      subtitle="Sign in to QuickReview — reviews, menus, and CRM for local business."
       onSubmit={onSubmit}
       submitLabel="Sign in"
       busy={busy}

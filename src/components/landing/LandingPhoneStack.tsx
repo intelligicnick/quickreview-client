@@ -14,19 +14,19 @@ export function LandingPhoneStack() {
       <div
         className={`absolute bottom-0 left-1/2 z-10 -translate-x-[calc(50%+4.5rem)] rotate-[-8deg] sm:-translate-x-[calc(50%+5.5rem)] ${phoneWrap}`}
       >
-        <MobileScreenFrame compact hideNotch className="shadow-2xl">
+        <MobileScreenFrame compact className="shadow-2xl">
           <LandingMenuScreen />
         </MobileScreenFrame>
       </div>
       <div className={`relative z-20 ${phoneWrap} max-w-[240px]`}>
-        <MobileScreenFrame compact hideNotch className="shadow-[0_24px_60px_rgba(27,35,51,0.35)]">
+        <MobileScreenFrame compact className="shadow-[0_24px_60px_rgba(27,35,51,0.35)]">
           <LandingReviewScreen />
         </MobileScreenFrame>
       </div>
       <div
         className={`absolute bottom-0 left-1/2 z-10 -translate-x-[calc(50%-4.5rem)] rotate-[8deg] sm:-translate-x-[calc(50%-5.5rem)] ${phoneWrap}`}
       >
-        <MobileScreenFrame compact hideNotch className="shadow-2xl">
+        <MobileScreenFrame compact className="shadow-2xl">
           <LandingDashboardScreen />
         </MobileScreenFrame>
       </div>
@@ -37,7 +37,7 @@ export function LandingPhoneStack() {
 export function LandingPhoneSingle() {
   return (
     <div className="mx-auto w-[min(100%,240px)]" aria-hidden>
-      <MobileScreenFrame compact hideNotch>
+      <MobileScreenFrame compact>
         <LandingReviewScreen />
       </MobileScreenFrame>
     </div>
@@ -47,7 +47,7 @@ export function LandingPhoneSingle() {
 export function LandingPhoneDashboard() {
   return (
     <div className="mx-auto w-[min(100%,240px)]" aria-hidden>
-      <MobileScreenFrame compact hideNotch>
+      <MobileScreenFrame compact>
         <LandingDashboardScreen />
       </MobileScreenFrame>
     </div>
@@ -57,7 +57,7 @@ export function LandingPhoneDashboard() {
 export function LandingPhoneReviewMini() {
   return (
     <div className="mx-auto w-[min(100%,180px)] -rotate-3 scale-[0.88] sm:scale-95" aria-hidden>
-      <MobileScreenFrame compact hideNotch className="shadow-xl">
+      <MobileScreenFrame compact className="shadow-xl">
         <LandingReviewScreen />
       </MobileScreenFrame>
     </div>

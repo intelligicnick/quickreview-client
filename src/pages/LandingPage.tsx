@@ -12,7 +12,6 @@ import {
   UtensilsCrossed,
   Users,
 } from 'lucide-react';
-import { BrandMark } from '../components/BrandMark';
 import { LandingHighlightCard } from '../components/landing/LandingHighlightCard';
 import { LandingNav } from '../components/landing/LandingNav';
 import {
@@ -32,26 +31,16 @@ import {
   ConnectCardVisual,
   CrmFollowUpsVisual,
 } from '../components/landing/visuals/ConnectCrmVisuals';
+import { LandingAiReviewShowcase } from '../components/landing/LandingAiReviewShowcase';
+import { LandingGuestFlow } from '../components/landing/LandingGuestFlow';
+import { LandingReferralBand } from '../components/landing/LandingReferralBand';
+import { LandingReputationStats } from '../components/landing/LandingReputationStats';
+import { LandingFooter } from '../components/landing/LandingFooter';
 
 const HERO_STATS = [
-  { value: '5 min', label: 'to go live' },
-  { value: '1 QR', label: 'all guest pages' },
-  { value: 'Free', label: 'workspace' },
-] as const;
-
-const STEPS = [
-  {
-    title: 'Import your shop',
-    description: 'Pull name, hours, and location from Google Business Profile.',
-  },
-  {
-    title: 'Print your QR',
-    description: 'Reviews, menu, and digital card — routed from one code.',
-  },
-  {
-    title: 'Follow up in CRM',
-    description: 'Track leads, quotations, and reminders from your phone.',
-  },
+  { value: '2 min', label: 'typical setup' },
+  { value: '1 QR', label: 'reviews, menu & card' },
+  { value: '10%', label: 'referral savings' },
 ] as const;
 
 const TRUST_ITEMS = [
@@ -74,14 +63,14 @@ export function LandingPage() {
             <div className="animate-fade-up text-white">
               <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Built for local business
+                Rank higher on Google
               </p>
               <h1 className="font-display mt-5 text-[1.75rem] font-extrabold leading-[1.12] tracking-tight sm:text-4xl lg:text-[2.85rem]">
-                Turn every scan into reviews, menus, and repeat customers
+                Turn every happy customer into a 5-star Google review
               </h1>
               <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/88 sm:text-base">
-                Import from Google Business, publish branded guest pages in minutes, and run
-                follow-ups from one workspace — no juggling five different apps.
+                Place a QR at checkout. Happy guests get AI-drafted reviews; unhappy ones share
+                feedback privately — then menus, digital cards, and CRM live in the same workspace.
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link
@@ -94,9 +83,12 @@ export function LandingPage() {
                   href="#how-it-works"
                   className="inline-flex min-h-11 items-center rounded-2xl border border-white/35 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
-                  How it works
+                  See the flow
                 </a>
               </div>
+              <p className="mt-4 text-xs font-medium text-white/70">
+                Free workspace · Import from Google Business · Refer a shop for 10% off
+              </p>
               <dl className="mt-8 grid max-w-md grid-cols-3 gap-3 border-t border-white/20 pt-6 sm:max-w-lg sm:gap-4">
                 {HERO_STATS.map(({ value, label }) => (
                   <div key={label}>
@@ -110,38 +102,33 @@ export function LandingPage() {
                 ))}
               </dl>
             </div>
-            <div className="mt-8 hidden animate-fade-up-delay sm:block sm:mt-10 lg:mt-0">
+            <div className="mt-8 animate-fade-up-delay sm:mt-10 lg:mt-0">
               <LandingPhoneStack />
             </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="scroll-mt-20 border-b border-line bg-white py-12 sm:py-14">
+        <LandingReputationStats />
+
+        <section id="how-it-works" className="scroll-mt-20 border-b border-line bg-paper py-12 sm:py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <LandingSectionHeader
-              eyebrow="How it works"
-              title="Live in three steps"
-              subtitle="From Google import to printed QR and CRM follow-ups — the same flow for cafés, salons, and counters."
+              eyebrow="Pure simplicity"
+              title="How QuickReview works for your guests"
+              subtitle="One QR on the counter. We route 4–5★ guests toward Google with AI drafts and keep 1–3★ feedback internal."
             />
-            <ol className="mt-10 grid gap-6 md:grid-cols-3">
-              {STEPS.map((step, index) => (
-                <li
-                  key={step.title}
-                  className="relative rounded-2xl border border-line bg-paper/80 p-5 sm:p-6"
-                >
-                  <span
-                    className="font-display inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-extrabold text-white"
-                    aria-hidden
-                  >
-                    {index + 1}
-                  </span>
-                  <h3 className="mt-4 font-bold text-ink">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{step.description}</p>
-                </li>
-              ))}
-            </ol>
+            <LandingGuestFlow />
+            <p className="mt-8 text-center text-sm text-muted">
+              For you:{' '}
+              <span className="font-semibold text-ink">
+                import from Google → print QR → follow up in CRM
+              </span>{' '}
+              — all from one login.
+            </p>
           </div>
         </section>
+
+        <LandingAiReviewShowcase />
 
         <section id="features" className="scroll-mt-20 bg-paper py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -171,7 +158,7 @@ export function LandingPage() {
               />
               <LandingHighlightCard
                 icon={Users}
-                title="Quick CRM follow-ups"
+                title="CRM follow-ups"
                 description="Log customers, quotations, and reminders on mobile — so nothing falls through after the first visit."
                 visual={<CrmFollowUpsVisual />}
               />
@@ -239,7 +226,7 @@ export function LandingPage() {
                 <AdvantageItem
                   icon={MessageSquare}
                   title="CRM follow-ups"
-                  description="Track customers, quotations, and reminders in Quick CRM on mobile or desktop."
+                  description="Track customers, quotations, and reminders in QuickReview on mobile or desktop."
                 />
               </div>
             </div>
@@ -325,14 +312,17 @@ export function LandingPage() {
           </div>
         </section>
 
+        <LandingReferralBand />
+
         <section className="bg-paper py-16 sm:py-24">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <div className="landing-final-cta rounded-[2rem] border border-line px-6 py-12 text-center shadow-[0_16px_48px_rgba(27,35,51,0.06)] sm:px-10 sm:py-14">
               <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Get the workspace free and start now
+                Start growing your Google reviews today
               </h2>
               <p className="mt-3 text-sm text-muted sm:text-base">
-                Create an account, import your location, and publish your first guest page today.
+                Create your profile, download QR materials, and go live in minutes — reviews, menu,
+                and digital card included.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
@@ -353,51 +343,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-ink px-4 py-14 text-white sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 sm:flex-row sm:justify-between">
-          <div>
-            <BrandMark className="brightness-0 invert" />
-            <p className="mt-3 max-w-xs text-sm text-white/60">
-              Quick CRM — reviews, menus, digital cards, and CRM for shops that run on foot traffic.
-            </p>
-          </div>
-          <div className="flex gap-12 text-sm">
-            <div>
-              <p className="font-semibold text-white/90">Product</p>
-              <ul className="mt-3 space-y-2 text-white/60">
-                <li>
-                  <a href="#features" className="hover:text-white">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#products" className="hover:text-white">
-                    Products
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold text-white/90">Account</p>
-              <ul className="mt-3 space-y-2 text-white/60">
-                <li>
-                  <Link to="/login" className="hover:text-white">
-                    Log in
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/register" className="hover:text-white">
-                    Register
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <p className="mx-auto mt-10 max-w-6xl border-t border-white/10 pt-6 text-center text-xs text-white/40">
-          © {new Date().getFullYear()} Quick CRM. All rights reserved.
-        </p>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

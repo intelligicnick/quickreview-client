@@ -38,7 +38,7 @@ export function RegisterPage() {
   return (
     <AuthCard
       title="Create your QuickReview account"
-      subtitle="Create your account, then set up Quick CRM in under 2 minutes."
+      subtitle="Create your account, then set up QuickReview in under 2 minutes."
       onSubmit={onSubmit}
       submitLabel="Create account"
       busy={busy}

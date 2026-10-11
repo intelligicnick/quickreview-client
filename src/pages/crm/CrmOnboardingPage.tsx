@@ -48,7 +48,7 @@ export function CrmOnboardingPage() {
   return (
     <div className="mx-auto max-w-md pb-6">
       <p className="text-sm font-medium text-brand">Step {step + 1} of 5</p>
-      <h1 className="mt-2 font-display text-2xl font-bold">Welcome to Quick CRM</h1>
+      <h1 className="mt-2 font-display text-2xl font-bold">Welcome to QuickReview</h1>
       <p className="mt-2 text-sm text-muted">Set up in under 2 minutes — no training needed.</p>
 
       <div className="mt-8 space-y-4">

@@ -32,7 +32,7 @@ type Payment = {
 const PRODUCT_LABEL: Record<string, string> = {
   QUICK_REVIEW: 'QuickReview',
   QUICK_MENU: 'QuickCommerce',
-  QUICK_CRM: 'QuickCRM',
+  QUICK_CRM: 'CRM',
   QUICK_CONNECT: 'QuickConnect',
   QUICK_DESIGN: 'QuickDesign',
   QUICK_SCAN: 'QuickScan',

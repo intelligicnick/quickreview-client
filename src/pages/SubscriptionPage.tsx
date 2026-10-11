@@ -49,7 +49,7 @@ type ProductKey =
 const PRODUCT_ROWS: { key: ProductKey; name: string; planProduct: string; blurb: string }[] = [
   { key: 'quickReview', name: 'QuickReview', planProduct: 'QUICK_REVIEW', blurb: 'Review QR, inbox, Google handoff' },
   { key: 'quickMenu', name: 'QuickCommerce', planProduct: 'QUICK_MENU', blurb: 'Catalogue, menu & Quick Revisit' },
-  { key: 'quickCrm', name: 'QuickCRM', planProduct: 'QUICK_CRM', blurb: 'Customers, quotes, invoices' },
+  { key: 'quickCrm', name: 'CRM', planProduct: 'QUICK_CRM', blurb: 'Customers, quotes, invoices' },
   { key: 'quickConnect', name: 'QuickConnect', planProduct: 'QUICK_CONNECT', blurb: 'Digital card & leads' },
   { key: 'quickDesign', name: 'QuickDesign', planProduct: 'QUICK_DESIGN', blurb: 'Social posters' },
   { key: 'quickScan', name: 'QuickScan', planProduct: 'QUICK_SCAN', blurb: 'Visiting card scan → CRM' },

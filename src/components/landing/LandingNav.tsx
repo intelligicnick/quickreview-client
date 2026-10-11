@@ -4,10 +4,13 @@ import { Menu, X } from 'lucide-react';
 import { BrandMark } from '../BrandMark';
 
 const LINKS = [
+  { href: '#why-reviews', label: 'Why reviews' },
   { href: '#how-it-works', label: 'How it works' },
   { href: '#features', label: 'Features' },
+  { href: '#refer', label: 'Refer 10%' },
   { href: '#products', label: 'Products' },
-];
+  { href: '/guides', label: 'Guides', route: true },
+] as const;
 
 export function LandingNav() {
   const [open, setOpen] = useState(false);
@@ -20,15 +23,25 @@ export function LandingNav() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-semibold text-muted transition hover:text-ink"
-            >
-              {link.label}
-            </a>
-          ))}
+          {LINKS.map((link) =>
+            'route' in link && link.route ? (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="text-sm font-semibold text-muted transition hover:text-ink"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-semibold text-muted transition hover:text-ink"
+              >
+                {link.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
@@ -60,16 +73,27 @@ export function LandingNav() {
       {open ? (
         <div className="border-t border-line bg-white px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-3">
-            {LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm font-semibold text-ink"
-                onClick={() => setOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
+            {LINKS.map((link) =>
+              'route' in link && link.route ? (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="text-sm font-semibold text-ink"
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-semibold text-ink"
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </a>
+              ),
+            )}
             <Link
               to="/login"
               className="text-sm font-semibold text-brand"

@@ -63,6 +63,8 @@ import { CrmSettingsPage } from './pages/crm/CrmSettingsPage';
 import { CrmTeamPage } from './pages/crm/CrmTeamPage';
 import { RequireCrmOnboarding } from './pages/crm/RequireCrmOnboarding';
 import { LandingPage } from './pages/LandingPage';
+import { GuidesPage } from './pages/GuidesPage';
+import { GuideArticlePage } from './pages/GuideArticlePage';
 
 function GuestOnly({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
@@ -124,6 +126,8 @@ export default function App() {
           </GuestOnly>
         }
       />
+      <Route path="/guides" element={<GuidesPage />} />
+      <Route path="/guides/:slug" element={<GuideArticlePage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
