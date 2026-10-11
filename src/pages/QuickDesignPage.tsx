@@ -659,7 +659,16 @@ export function QuickDesignPage() {
           setError(null);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Could not load QuickDesign');
+        if (!cancelled) {
+          setHub(null);
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : 'Could not load QuickDesign',
+          );
+        }
       }
     })();
     return () => {

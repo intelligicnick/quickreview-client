@@ -71,18 +71,29 @@ export function QuickConnectPage() {
     }
     let cancelled = false;
     void (async () => {
+      setError(null);
       try {
-        const [data, leadRows] = await Promise.all([
-          api<Hub>(`/api/locations/${selected.id}/quickconnect`),
-          api<Lead[]>(`/api/locations/${selected.id}/quickconnect/leads`),
-        ]);
-        if (!cancelled) {
-          setHub(data);
-          setLeads(leadRows);
-          setError(null);
+        const data = await api<Hub>(`/api/locations/${selected.id}/quickconnect`);
+        if (cancelled) return;
+        setHub(data);
+        try {
+          const leadRows = await api<Lead[]>(`/api/locations/${selected.id}/quickconnect/leads`);
+          if (!cancelled) setLeads(leadRows);
+        } catch {
+          if (!cancelled) setLeads([]);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Could not load QuickConnect');
+        if (!cancelled) {
+          setHub(null);
+          setLeads([]);
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : 'Could not load QuickConnect',
+          );
+        }
       }
     })();
     return () => {
