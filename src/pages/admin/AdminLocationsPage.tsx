@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { ActivatePlanForLocation } from '../../components/admin/ActivatePlanForLocation';
 import { api, ApiError } from '../../lib/api';
 
 type AdminLocation = {
@@ -255,6 +256,7 @@ export function AdminLocationsPage() {
                 Transfer
               </button>
             </form>
+            <ActivatePlanForLocation compact locationId={row.id} locationName={row.name} />
           </article>
         ))}
       </div>
