@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" role="img" aria-label="Acrylic standee with QuickReview menu QR">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a6dff"/>
+      <stop offset="100%" stop-color="#1557d6"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-5%" width="120%" height="115%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="400" height="600" fill="#f8fafc"/>
+  <g filter="url(#shadow)" transform="translate(52 40)">
+    <rect x="0" y="0" width="296" height="444" rx="12" fill="url(#bg)" stroke="#fed7aa" stroke-width="2"/>
+    <rect x="0" y="0" width="296" height="56" rx="12" fill="url(#accent)"/>
+    <rect x="0" y="44" width="296" height="12" fill="url(#accent)"/>
+    <text x="148" y="36" text-anchor="middle" fill="#fff" font-family="system-ui,Segoe UI,sans-serif" font-size="20" font-weight="800">QuickReview</text>
+    <text x="148" y="88" text-anchor="middle" fill="#c2410c" font-family="system-ui,sans-serif" font-size="13" font-weight="700">Scan for menu &amp; offers</text>
+    <rect x="58" y="108" width="180" height="180" rx="8" fill="#fff" stroke="#1a6dff" stroke-width="3"/>
+    <g fill="#0f172a">
+      <rect x="70" y="120" width="44" height="44" rx="4"/>
+      <rect x="78" y="128" width="28" height="28" fill="#fff"/>
+      <rect x="84" y="134" width="16" height="16" fill="#ea580c"/>
+      <rect x="182" y="120" width="44" height="44" rx="4"/>
+      <rect x="190" y="128" width="28" height="28" fill="#fff"/>
+      <rect x="196" y="134" width="16" height="16" fill="#ea580c"/>
+      <rect x="70" y="232" width="44" height="44" rx="4"/>
+      <rect x="78" y="240" width="28" height="28" fill="#fff"/>
+      <rect x="84" y="246" width="16" height="16" fill="#ea580c"/>
+      <rect x="122" y="124" width="12" height="12"/><rect x="140" y="136" width="10" height="10"/><rect x="156" y="124" width="14" height="10"/>
+      <rect x="118" y="152" width="18" height="10"/><rect x="146" y="160" width="10" height="10"/><rect x="168" y="148" width="12" height="12"/>
+      <rect x="126" y="176" width="10" height="10"/><rect x="142" y="184" width="22" height="10"/><rect x="174" y="176" width="10" height="10"/>
+      <rect x="118" y="200" width="14" height="10"/><rect x="150" y="208" width="10" height="10"/><rect x="166" y="200" width="18" height="10"/>
+      <rect x="126" y="224" width="10" height="10"/><rect x="146" y="232" width="18" height="10"/><rect x="174" y="224" width="10" height="10"/>
+      <rect x="118" y="248" width="22" height="10"/><rect x="150" y="256" width="10" height="10"/><rect x="166" y="248" width="18" height="10"/>
+      <rect x="126" y="272" width="10" height="10"/><rect x="142" y="264" width="26" height="10"/><rect x="178" y="272" width="10" height="10"/>
+    </g>
+    <g transform="translate(72 308)" fill="none" stroke="#ea580c" stroke-width="2">
+      <rect x="0" y="0" width="152" height="20" rx="4" fill="#fff"/>
+      <rect x="0" y="28" width="120" height="14" rx="3" fill="#ffedd5" stroke="none"/>
+      <rect x="0" y="50" width="140" height="14" rx="3" fill="#ffedd5" stroke="none"/>
+      <rect x="0" y="72" width="100" height="14" rx="3" fill="#ffedd5" stroke="none"/>
+    </g>
+    <text x="148" y="368" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="11" font-weight="600">Digital menu · QuickCommerce</text>
+    <rect x="24" y="388" width="248" height="36" rx="18" fill="url(#accent)"/>
+    <text x="148" y="412" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="12" font-weight="700">quickreview.co.in</text>
+    <path d="M 88 444 L 148 468 L 208 444 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+    <ellipse cx="148" cy="478" rx="72" ry="10" fill="#cbd5e1"/>
+  </g>
+  <text x="200" y="580" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">43 × 63 acrylic standee</text>
+</svg>

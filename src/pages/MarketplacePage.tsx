@@ -72,6 +72,18 @@ function catalogSections(hub: Hub): Array<{ category: Category; products: Produc
   return sections;
 }
 
+function productPreviewAspect(product: Product): string {
+  const name = product.name.toLowerCase();
+  const dims = (product.dimensions ?? '').toLowerCase();
+  if (name.includes('nfc') || name.includes('card') || dims.includes('mm') || dims.includes('cr80')) {
+    return 'aspect-[856/540]';
+  }
+  if (name.includes('standee') || dims.includes('6')) {
+    return 'aspect-[2/3]';
+  }
+  return 'aspect-[4/3]';
+}
+
 function ProductCard({
   product,
   onOrder,
@@ -79,16 +91,19 @@ function ProductCard({
   product: Product;
   onOrder: (product: Product) => void;
 }) {
+  const previewAspect = productPreviewAspect(product);
   return (
     <div className="flex flex-col rounded-2xl border border-line bg-white p-5">
       {product.imageUrl ? (
         <img
           src={product.imageUrl}
           alt=""
-          className="aspect-[4/3] w-full rounded-xl object-cover"
+          className={`${previewAspect} w-full rounded-xl bg-paper object-contain`}
         />
       ) : (
-        <div className="flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-paper text-xs font-semibold text-muted">
+        <div
+          className={`flex ${previewAspect} w-full items-center justify-center rounded-xl bg-paper text-xs font-semibold text-muted`}
+        >
           Photo coming soon
         </div>
       )}

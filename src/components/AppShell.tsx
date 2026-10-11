@@ -11,6 +11,7 @@ import {
   IdCard,
   Palette,
   ScanLine,
+  ShoppingBag,
   Users,
   X,
 } from 'lucide-react';
@@ -55,6 +56,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: 'This location',
     items: [
       { to: '/app/qr', label: 'QR codes & standees', icon: QrCode },
+      { to: '/app/marketplace', label: 'Marketplace', icon: ShoppingBag },
       { to: '/app/subscription', label: 'Plans & billing', icon: CreditCard },
       { to: '/app/settings', label: 'Settings', icon: Settings },
     ],
