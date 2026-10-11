@@ -22,6 +22,7 @@ type Summary = {
     endDate: string | null;
   };
   aiKeywords: string[];
+  aiReviewQuestions: string[];
   stats: {
     pageViews: number;
     stars: number;
@@ -53,6 +54,7 @@ export function QuickReviewPage() {
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [keywordsText, setKeywordsText] = useState('');
+  const [questionsText, setQuestionsText] = useState('');
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function QuickReviewPage() {
           setSummary(hub);
           setInbox(items);
           setKeywordsText((hub.aiKeywords ?? []).join(', '));
+          setQuestionsText((hub.aiReviewQuestions ?? []).join('\n'));
           setError(null);
         }
       } catch (err) {
@@ -83,20 +86,24 @@ export function QuickReviewPage() {
     };
   }, [selected]);
 
-  async function saveKeywords() {
+  async function saveAiSettings() {
     if (!selected) return;
     const keywords = keywordsText
       .split(',')
       .map((k) => k.trim())
       .filter(Boolean);
+    const reviewQuestions = questionsText
+      .split('\n')
+      .map((q) => q.trim())
+      .filter(Boolean);
     try {
       await api(`/api/locations/${selected.id}/quickreview/settings`, {
         method: 'PATCH',
-        body: { keywords },
+        body: { keywords, reviewQuestions },
       });
-      setSettingsMsg('AI keywords saved');
+      setSettingsMsg('AI settings saved');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save keywords');
+      setError(err instanceof ApiError ? err.message : 'Could not save AI settings');
     }
   }
 
@@ -250,9 +257,21 @@ export function QuickReviewPage() {
 
           {tab === 'settings' ? (
             <div className="mt-6 max-w-xl rounded-2xl border border-line bg-white p-5">
-              <p className="font-bold">AI review keywords</p>
+              <p className="font-bold">Guest questions (4–5★)</p>
               <p className="mt-1 text-sm text-muted">
-                Comma-separated words woven into 4–5 star Google draft suggestions (Gemini when configured).
+                One question per line. Guests answer these; AI turns their words into an editable Google review
+                (Gemini when configured). Leave blank for defaults.
+              </p>
+              <textarea
+                className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-sm"
+                rows={4}
+                value={questionsText}
+                onChange={(e) => setQuestionsText(e.target.value)}
+                placeholder={`What did you enjoy most about your visit?\nWas there anything that stood out?\nWho would you recommend us to?`}
+              />
+              <p className="mt-4 font-bold">AI keywords (optional)</p>
+              <p className="mt-1 text-sm text-muted">
+                Comma-separated themes the AI may mention when they fit the guest&apos;s answers.
               </p>
               <input
                 className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-sm"
@@ -262,14 +281,14 @@ export function QuickReviewPage() {
               />
               <button
                 type="button"
-                onClick={() => void saveKeywords()}
+                onClick={() => void saveAiSettings()}
                 className="mt-3 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white"
               >
-                Save keywords
+                Save AI settings
               </button>
               {settingsMsg ? <p className="mt-2 text-xs text-brand-dark">{settingsMsg}</p> : null}
               <p className="mt-4 text-sm text-muted">
-                Setup: {setupDone ? 'Google link connected' : 'add Google review URL'} · keywords power AI drafts
+                Setup: {setupDone ? 'Google link connected' : 'add Google review URL'}
               </p>
             </div>
           ) : null}

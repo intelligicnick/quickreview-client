@@ -18,9 +18,12 @@ type PublicReview = {
   category: string | null;
   googlePlaceId: string | null;
   googleReviewUrl: string | null;
+  reviewQuestions: string[];
 };
 
-type Step = 'rating' | 'generating' | 'suggestions' | 'private-feedback' | 'thank-you';
+type Step = 'rating' | 'questions' | 'generating' | 'draft' | 'private-feedback' | 'thank-you';
+
+type DraftAnswer = { question: string; answer: string };
 
 const RATING_OPTIONS: Record<number, { label: string; emoji: string }> = {
   1: { label: 'Terrible', emoji: '😢' },
@@ -31,20 +34,33 @@ const RATING_OPTIONS: Record<number, { label: string; emoji: string }> = {
 };
 
 const GENERATING_MESSAGES = [
-  'Our AI is crafting personalised review options based on your rating…',
+  'Turning your answers into a Google review you can edit…',
   'Reviews like yours help other customers make wise decisions.',
   'Your feedback shines a light for people discovering this place.',
   'Honest voices like yours help great businesses get noticed.',
 ];
 
+const DEFAULT_REVIEW_QUESTIONS = [
+  'What did you enjoy most about your visit?',
+  'Was there anything that stood out? (staff, ambiance, service…)',
+  'Who would you recommend us to?',
+];
+
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
 
-function fallbackDrafts(name: string, stars: number): string[] {
+function fallbackDrafts(name: string, stars: number, highlight?: string): string[] {
+  const bit = highlight?.trim() || 'great service';
   return [
-    `Had a ${stars}-star experience at ${name}. Would recommend to friends and family.`,
-    `${name} exceeded my expectations — friendly team and great service.`,
-    `Really pleased with my visit to ${name}. Professional, quick, and worth every rupee.`,
+    `Had a ${stars}-star experience at ${name}. ${bit}. Would recommend to friends and family.`,
+    `${name} exceeded my expectations — ${bit}. Friendly team and great service.`,
+    `Really pleased with my visit to ${name}. ${bit}. Professional and worth every rupee.`,
   ];
+}
+
+function buildDraftAnswers(questions: string[], answers: string[]): DraftAnswer[] {
+  return questions
+    .map((question, index) => ({ question, answer: answers[index]?.trim() ?? '' }))
+    .filter((row) => row.answer.length >= 2);
 }
 
 export function ReviewPage() {
@@ -56,9 +72,10 @@ export function ReviewPage() {
   const [step, setStep] = useState<Step>('rating');
   const [hovered, setHovered] = useState(0);
   const [selected, setSelected] = useState(0);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
-  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const [questionAnswers, setQuestionAnswers] = useState<string[]>([]);
+  const [draftText, setDraftText] = useState('');
+  const [draftAlternatives, setDraftAlternatives] = useState<string[]>([]);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [messageIndex, setMessageIndex] = useState(0);
   const [privateFeedbackText, setPrivateFeedbackText] = useState('');
   const [privateFeedbackError, setPrivateFeedbackError] = useState<string | null>(null);
@@ -113,23 +130,36 @@ export function ReviewPage() {
     });
   }
 
-  async function generateSuggestions(starRating: number) {
+  const activeQuestions =
+    shop?.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
+
+  async function generateDraft(starRating: number) {
     if (!shop) return;
+    const answers = buildDraftAnswers(activeQuestions, questionAnswers);
+    if (!answers.length) {
+      setDraftError('Please answer at least one question.');
+      return;
+    }
     setStep('generating');
-    setSuggestionsError(null);
-    setSuggestions([]);
-    setSelectedSuggestionIndex(0);
+    setDraftError(null);
+    setDraftAlternatives([]);
     try {
       const data = await api<{ suggestions: string[] }>(
         `/api/public/r/${encodeURIComponent(code)}/suggestions`,
-        { method: 'POST', auth: false, body: { stars: starRating } },
+        { method: 'POST', auth: false, body: { stars: starRating, answers } },
       );
-      setSuggestions(data.suggestions.length ? data.suggestions : fallbackDrafts(shop.name, starRating));
-      setStep('suggestions');
+      const list = data.suggestions.length
+        ? data.suggestions
+        : fallbackDrafts(shop.name, starRating, answers[0]?.answer);
+      setDraftText(list[0] ?? '');
+      setDraftAlternatives(list.slice(1));
+      setStep('draft');
     } catch (err) {
-      setSuggestionsError(err instanceof Error ? err.message : 'Could not generate review suggestions.');
-      setSuggestions(fallbackDrafts(shop.name, starRating));
-      setStep('suggestions');
+      const fallback = fallbackDrafts(shop.name, starRating, answers[0]?.answer);
+      setDraftError(err instanceof Error ? err.message : 'Could not generate your review.');
+      setDraftText(fallback[0] ?? '');
+      setDraftAlternatives(fallback.slice(1));
+      setStep('draft');
     }
   }
 
@@ -145,7 +175,17 @@ export function ReviewPage() {
       setStep('private-feedback');
       return;
     }
-    void generateSuggestions(value);
+    const questions =
+      shop.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
+    setQuestionAnswers(questions.map(() => ''));
+    setDraftError(null);
+    setStep('questions');
+  }
+
+  function handleSubmitQuestions(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    void generateDraft(selected);
   }
 
   async function handleSubmitPrivateFeedback(event: FormEvent<HTMLFormElement>) {
@@ -171,8 +211,8 @@ export function ReviewPage() {
   }
 
   async function handleCopyAndOpenGoogle() {
-    if (!shop || !suggestions[selectedSuggestionIndex]) return;
-    const text = suggestions[selectedSuggestionIndex];
+    if (!shop || !draftText.trim()) return;
+    const text = draftText.trim();
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -193,12 +233,26 @@ export function ReviewPage() {
 
   function handleBackToStars() {
     setStep('rating');
-    setSuggestions([]);
-    setSelectedSuggestionIndex(0);
-    setSuggestionsError(null);
+    setQuestionAnswers([]);
+    setDraftText('');
+    setDraftAlternatives([]);
+    setDraftError(null);
     setPrivateFeedbackText('');
     setPrivateFeedbackError(null);
     setHovered(0);
+  }
+
+  function handleBackToQuestions() {
+    setStep('questions');
+    setDraftText('');
+    setDraftAlternatives([]);
+    setDraftError(null);
+  }
+
+  function applyAlternative(index: number) {
+    const text = draftAlternatives[index];
+    if (!text) return;
+    setDraftText(text);
   }
 
   const activeRating = hovered || selected;
@@ -309,6 +363,53 @@ export function ReviewPage() {
               </div>
             </RateCard>
           </div>
+        ) : shop && step === 'questions' ? (
+          <div className="animate-fade-up w-full sm:w-auto">
+            <RateCard showBack onBack={handleBackToStars}>
+              <div className="text-center">
+                <h1 className="font-display text-[1.55rem] font-bold tracking-tight text-ink sm:text-[1.7rem]">
+                  Help us write your review
+                </h1>
+                <p className="mt-2.5 text-sm leading-relaxed text-muted">
+                  Answer a few quick questions — we&apos;ll draft a Google review you can edit.
+                </p>
+              </div>
+              <form className="mt-6 space-y-4" onSubmit={(e) => void handleSubmitQuestions(e)}>
+                {activeQuestions.map((question, index) => (
+                  <div key={index}>
+                    <label className="block text-sm font-semibold text-ink" htmlFor={`review-q-${index}`}>
+                      {question}
+                      {index === 0 ? null : (
+                        <span className="font-normal text-muted"> (optional)</span>
+                      )}
+                    </label>
+                    <input
+                      id={`review-q-${index}`}
+                      type="text"
+                      maxLength={500}
+                      value={questionAnswers[index] ?? ''}
+                      onChange={(e) => {
+                        const next = [...questionAnswers];
+                        next[index] = e.target.value;
+                        setQuestionAnswers(next);
+                        if (draftError) setDraftError(null);
+                      }}
+                      className="mt-2 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                      placeholder={index === 0 ? 'e.g. friendly staff, great coffee…' : 'Your answer'}
+                      required={index === 0}
+                    />
+                  </div>
+                ))}
+                {draftError ? (
+                  <p className="text-sm text-red-600" role="alert">{draftError}</p>
+                ) : null}
+                <button type="submit" className="btn-gradient w-full">
+                  Create my review
+                  <Sparkles className="ml-1.5 inline h-4 w-4" aria-hidden />
+                </button>
+              </form>
+            </RateCard>
+          </div>
         ) : shop && step === 'private-feedback' ? (
           <div className="animate-fade-up w-full sm:w-auto">
             <RateCard showBack onBack={handleBackToStars}>
@@ -363,7 +464,7 @@ export function ReviewPage() {
           </div>
         ) : shop && step === 'generating' ? (
           <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard showBack onBack={handleBackToStars}>
+            <RateCard showBack onBack={handleBackToQuestions}>
               <div className="flex flex-col items-center py-6 text-center">
                 <Loader2 className="h-14 w-14 animate-spin text-brand" aria-hidden />
                 <p key={messageIndex} className="mt-6 min-h-14 text-[15px] leading-relaxed text-muted" aria-live="polite">
@@ -372,69 +473,78 @@ export function ReviewPage() {
               </div>
             </RateCard>
           </div>
-        ) : shop && step === 'suggestions' ? (
+        ) : shop && step === 'draft' ? (
           <div className="animate-fade-up flex h-dvh min-h-0 w-full flex-col sm:h-auto sm:w-auto">
-            <RateCard showBack onBack={handleBackToStars} fill>
+            <RateCard showBack onBack={handleBackToQuestions} fill>
               <p className="flex shrink-0 items-center justify-center gap-2 text-center text-sm font-bold text-ink">
                 <Sparkles className="h-4 w-4 shrink-0 text-brand" aria-hidden />
-                Select a review to copy and post on Google
+                Edit your review, then post on Google
               </p>
-              {suggestionsError ? (
-                <div className="mt-8 text-center">
-                  <p className="text-sm text-red-600">{suggestionsError}</p>
+              {draftError ? (
+                <p className="mt-3 text-center text-sm text-amber-800">{draftError}</p>
+              ) : null}
+              <div className="mt-4 flex min-h-0 flex-1 flex-col">
+                <label htmlFor="google-review-draft" className="sr-only">Google review draft</label>
+                <textarea
+                  id="google-review-draft"
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  rows={6}
+                  maxLength={4000}
+                  className="min-h-[10rem] w-full flex-1 resize-y rounded-2xl border border-line bg-paper px-4 py-3.5 text-sm leading-relaxed text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+                />
+                {draftAlternatives.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {draftAlternatives.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => applyAlternative(index)}
+                        className="rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-brand hover:text-brand"
+                      >
+                        Wording {index + 2}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="shrink-0 space-y-3 pt-4">
                   <button
                     type="button"
-                    className="btn-gradient mt-4 px-4 py-2.5"
-                    onClick={() => selected && void generateSuggestions(selected)}
+                    onClick={() => selected && void generateDraft(selected)}
+                    className="w-full rounded-xl border border-line bg-white py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand"
                   >
-                    Try again
+                    Regenerate from my answers
                   </button>
+                  {shop.googleReviewUrl ? (
+                    <button
+                      type="button"
+                      disabled={!draftText.trim()}
+                      onClick={() => void handleCopyAndOpenGoogle()}
+                      className="btn-gradient w-full disabled:opacity-50"
+                    >
+                      Copy and open Google
+                      <span aria-hidden className="ml-1">→</span>
+                    </button>
+                  ) : (
+                    <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                      Google review link is not set up for this shop yet.
+                    </p>
+                  )}
+                  <p className="text-center text-xs text-muted">
+                    On Google: paste your text (long-press → Paste) and choose your stars.
+                  </p>
+                  {shop.googleReviewUrl ? (
+                    <button
+                      type="button"
+                      onClick={handleWriteOwn}
+                      className="flex w-full items-center justify-center gap-1.5 bg-transparent text-sm text-muted transition-colors hover:text-brand"
+                    >
+                      Open Google without copying
+                      <ArrowUpRight className="h-4 w-4" aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
-              ) : (
-                <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-2 sm:max-h-[68dvh] sm:flex-none">
-                    <div className="flex flex-col gap-3 pb-1">
-                      {suggestions.map((text, index) => {
-                        const isSelected = index === selectedSuggestionIndex;
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={() => setSelectedSuggestionIndex(index)}
-                            className={`w-full rounded-2xl border bg-paper px-4 py-4 text-left transition-colors ${
-                              isSelected ? 'border-brand shadow-sm' : 'border-line hover:border-brand/30'
-                            }`}
-                          >
-                            <p className="text-sm leading-relaxed text-ink sm:text-[15px]">{text}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="shrink-0 pt-4">
-                    {shop.googleReviewUrl ? (
-                      <button type="button" onClick={() => void handleCopyAndOpenGoogle()} className="btn-gradient w-full">
-                        Copy and open Google
-                        <span aria-hidden className="ml-1">→</span>
-                      </button>
-                    ) : (
-                      <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                        Google review link is not set up for this shop yet.
-                      </p>
-                    )}
-                    {shop.googleReviewUrl ? (
-                      <button
-                        type="button"
-                        onClick={handleWriteOwn}
-                        className="mt-3 flex w-full items-center justify-center gap-1.5 bg-transparent text-sm text-muted transition-colors hover:text-brand"
-                      >
-                        Write my own review instead
-                        <ArrowUpRight className="h-4 w-4" aria-hidden />
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              )}
+              </div>
             </RateCard>
           </div>
         ) : null}

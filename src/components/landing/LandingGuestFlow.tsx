@@ -7,7 +7,7 @@ const FLOW: { icon: LucideIcon; title: string; detail: string; tag?: string }[] 
   {
     icon: Sparkles,
     title: 'AI draft or private form',
-    detail: '4–5★ get keyword-smart review suggestions; 1–3★ stay internal',
+    detail: '4–5★ answer quick questions → AI draft to edit; 1–3★ stay internal',
     tag: 'Smart routing',
   },
   { icon: MessageSquareWarning, title: 'Post or fix', detail: 'Happy guests copy to Google; you resolve complaints first' },
