@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ActivatePlanForLocation } from '../../components/admin/ActivatePlanForLocation';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { adminWhen, inr } from '../../lib/admin-ui';
@@ -101,14 +102,19 @@ export function AdminUserPage() {
     return map;
   }, [account]);
 
+  async function reloadAccount() {
+    if (!userId) return;
+    const data = await api<Account>(`/api/admin/users/${userId}`);
+    setAccount(data);
+  }
+
   async function patch(body: { isActive?: boolean; emailVerified?: boolean }, action: string) {
     if (!userId) return;
     setBusy(action);
     setError(null);
     try {
       await api(`/api/admin/users/${userId}`, { method: 'PATCH', body });
-      const data = await api<Account>(`/api/admin/users/${userId}`);
-      setAccount(data);
+      await reloadAccount();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not update this account');
     } finally {
@@ -239,6 +245,12 @@ export function AdminUserPage() {
                       {location.slug ? ` · /go/${location.slug}` : ''}
                       {qr.length ? ` · ${qr.map((c) => c.code).join(', ')}` : ''}
                     </p>
+                    <ActivatePlanForLocation
+                      compact
+                      locationId={location.id}
+                      locationName={location.name}
+                      onActivated={() => void reloadAccount().catch(() => undefined)}
+                    />
                   </article>
                 );
               }),

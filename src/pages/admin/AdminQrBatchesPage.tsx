@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LocationPicker } from '../../components/admin/LocationPicker';
+import { QrCodePreview } from '../../components/QrCodePreview';
 import { api, ApiError } from '../../lib/api';
+
+function qrEncodeValue(row: QrRow): string {
+  return row.targetUrl ?? row.claimUrl;
+}
 
 type QrRow = {
   id: string;
@@ -229,9 +234,10 @@ export function AdminQrBatchesPage() {
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
             <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
+              <th className="px-3 py-2 w-24">QR</th>
               <th className="px-3 py-2">Code</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Assigned to</th>
@@ -239,16 +245,25 @@ export function AdminQrBatchesPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((row) => (
-              <tr key={row.id} className="border-b border-line last:border-0">
-                <td className="px-3 py-2 font-mono font-semibold">{row.code}</td>
-                <td className="px-3 py-2 text-muted">
-                  {row.locationId ? 'Assigned' : row.isPrinted ? 'Printed' : 'Not printed'}
-                </td>
-                <td className="px-3 py-2">{row.locationName ?? '—'}</td>
-                <td className="px-3 py-2">{opensLabel(row)}</td>
-              </tr>
-            ))}
+            {filtered.map((row) => {
+              const qrValue = qrEncodeValue(row);
+              return (
+                <tr key={row.id} className="border-b border-line last:border-0">
+                  <td className="px-3 py-2 align-top">
+                    <QrCodePreview value={qrValue} size={72} label={`QR ${row.code}`} />
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    <p className="font-mono font-semibold">{row.code}</p>
+                    <p className="mt-1 max-w-xs break-all text-xs text-muted">{qrValue}</p>
+                  </td>
+                  <td className="px-3 py-2 align-top text-muted">
+                    {row.locationId ? 'Assigned' : row.isPrinted ? 'Printed' : 'Not printed'}
+                  </td>
+                  <td className="px-3 py-2 align-top">{row.locationName ?? '—'}</td>
+                  <td className="px-3 py-2 align-top">{opensLabel(row)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

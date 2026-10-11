@@ -304,8 +304,11 @@ export function AdminSubscriptionsPage() {
             className="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-sm"
           >
             <option value="">Choose plan</option>
-            {plans.filter((p) => p.amountInr > 0).map((plan) => (
-              <option key={plan.id} value={plan.id}>{plan.name}</option>
+            {plans.filter((p) => p.isActive).map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {PRODUCT_LABEL[plan.product] ?? plan.product} — {plan.name}
+                {plan.amountInr === 0 ? ' (trial)' : ` (${inr(plan.amountInr)})`}
+              </option>
             ))}
           </select>
           <input
