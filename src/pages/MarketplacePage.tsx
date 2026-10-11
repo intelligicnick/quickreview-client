@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ShoppingBag } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
+import { marketplaceImageSrc } from '../lib/marketplace-image';
 import { useLocationContext } from '../lib/location-context';
 
 type Category = {
@@ -92,11 +93,12 @@ function ProductCard({
   onOrder: (product: Product) => void;
 }) {
   const previewAspect = productPreviewAspect(product);
+  const imageSrc = marketplaceImageSrc(product.imageUrl, product.name);
   return (
     <div className="flex flex-col rounded-2xl border border-line bg-white p-5">
-      {product.imageUrl ? (
+      {imageSrc ? (
         <img
-          src={product.imageUrl}
+          src={imageSrc}
           alt=""
           className={`${previewAspect} w-full rounded-xl bg-paper object-contain`}
         />

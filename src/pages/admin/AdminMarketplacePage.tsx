@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { marketplaceImageSrc } from '../../lib/marketplace-image';
 
 type Category = {
   id: string;
@@ -296,12 +297,14 @@ export function AdminMarketplacePage() {
           </label>
         </div>
         <ul className="mt-4 space-y-6">
-          {filteredProducts.map((product) => (
+          {filteredProducts.map((product) => {
+            const imageSrc = marketplaceImageSrc(product.imageUrl, product.name);
+            return (
             <li key={product.id} className="border-b border-line pb-6 last:border-0">
               <div className="flex flex-wrap gap-4">
-                {product.imageUrl ? (
+                {imageSrc ? (
                   <img
-                    src={product.imageUrl}
+                    src={imageSrc}
                     alt=""
                     className="h-24 w-32 rounded-xl object-cover"
                   />
@@ -385,7 +388,8 @@ export function AdminMarketplacePage() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
         {filteredProducts.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No products in this category.</p>
