@@ -19,7 +19,7 @@ type PublicReview = {
   googlePlaceId: string | null;
   googleReviewUrl: string | null;
   reviewQuestions: string[];
-  answerOptions?: string[];
+  answerOptionsPerQuestion?: string[][];
 };
 
 type Step = 'rating' | 'questions' | 'generating' | 'draft' | 'private-feedback' | 'thank-you';
@@ -47,13 +47,10 @@ const DEFAULT_REVIEW_QUESTIONS = [
   'Who would you recommend us to?',
 ];
 
-const DEFAULT_ANSWER_OPTIONS = [
-  'Friendly staff',
-  'Great food',
-  'Ambience',
-  'Fast service',
-  'Clean place',
-  'Good value',
+const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
+  ['Friendly staff', 'Great food', 'Ambience'],
+  ['Fast service', 'Clean place', 'Good value'],
+  ['Friends & family', 'Date night', 'Food lovers'],
 ];
 
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
@@ -143,8 +140,14 @@ export function ReviewPage() {
   const activeQuestions =
     shop?.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
 
-  const answerOptions =
-    shop?.answerOptions?.length ? shop.answerOptions : DEFAULT_ANSWER_OPTIONS;
+  function chipsForQuestion(index: number): string[] {
+    const fromApi = shop?.answerOptionsPerQuestion?.[index];
+    if (fromApi?.length) return fromApi;
+    const fallback =
+      DEFAULT_ANSWER_OPTIONS_BY_QUESTION[index] ??
+      DEFAULT_ANSWER_OPTIONS_BY_QUESTION[index % DEFAULT_ANSWER_OPTIONS_BY_QUESTION.length];
+    return [...fallback];
+  }
 
   async function generateDraft(starRating: number) {
     if (!shop) return;
@@ -424,7 +427,7 @@ export function ReviewPage() {
                       )}
                     </label>
                     <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tap to select">
-                      {answerOptions.map((option) => {
+                      {chipsForQuestion(index).map((option) => {
                         const selected = isAnswerOptionSelected(
                           questionAnswers[index] ?? '',
                           option,

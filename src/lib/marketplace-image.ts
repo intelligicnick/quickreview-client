@@ -4,12 +4,24 @@ const DEFAULT_BY_NAME: Record<string, string> = {
   'NFC review card': '/marketplace/nfc-review-card.svg',
 };
 
+function catalogImagePath(raw: string): string {
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const { pathname } = new URL(raw);
+      if (pathname.startsWith('/marketplace/')) return pathname;
+    } catch {
+      /* keep external absolute URL */
+    }
+    return raw;
+  }
+  return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
 export function marketplaceImageSrc(
   imageUrl: string | null | undefined,
   productName?: string,
 ): string | null {
   const raw = imageUrl?.trim() || (productName ? DEFAULT_BY_NAME[productName] : undefined);
   if (!raw) return null;
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return raw.startsWith('/') ? raw : `/${raw}`;
+  return catalogImagePath(raw);
 }
