@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { LockedQrGate } from '../components/LockedQrGate';
 import { QrCodePreview } from '../components/QrCodePreview';
+import { ReviewGuestPreview } from '../components/review/ReviewGuestPreview';
 import { api, ApiError } from '../lib/api';
 import { useLocationContext } from '../lib/location-context';
 
@@ -232,7 +233,7 @@ export function QuickReviewPage() {
   const googlePct = pageViews > 0 ? Math.round((googleOpens / pageViews) * 100) : 0;
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -264,7 +265,8 @@ export function QuickReviewPage() {
       {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
       {selected && summary ? (
-        <div className="mt-6">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
           <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="QuickReview sections">
             {buildTabs(inbox.length).map((item) => (
               <button
@@ -740,6 +742,11 @@ export function QuickReviewPage() {
               {settingsMsg ? <p className="mt-2 text-sm text-brand-dark">{settingsMsg}</p> : null}
             </div>
           ) : null}
+          </div>
+
+          <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <ReviewGuestPreview locationName={selected.name} locked={!unlocked} />
+          </div>
         </div>
       ) : null}
     </div>

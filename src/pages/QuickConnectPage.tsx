@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Copy, ExternalLink, IdCard, Lock, Plus, Trash2 } from 'lucide-react';
+import { ConnectCardShell } from '../components/connect/ConnectCardShell';
+import { GuestPreviewHeading } from '../components/MobileScreenFrame';
 import { api, ApiError } from '../lib/api';
 import { useLocationContext } from '../lib/location-context';
 
@@ -212,36 +214,8 @@ export function QuickConnectPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 max-w-3xl space-y-6">
-              <div className="rounded-2xl border border-line bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Public link</p>
-                <p className="mt-2 break-all font-mono text-sm">{hub.publicUrl}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={!unlocked}
-                    onClick={() => void copyLink()}
-                    className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-50"
-                  >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    Copy
-                  </button>
-                  <a
-                    href={unlocked ? hub.publicPath : undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => {
-                      if (!unlocked) e.preventDefault();
-                    }}
-                    className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${
-                      unlocked ? 'bg-brand text-white' : 'cursor-not-allowed bg-paper text-muted'
-                    }`}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Open
-                  </a>
-                </div>
-              </div>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="min-w-0 space-y-6">
               <form onSubmit={(e) => void saveProfile(e)} className="rounded-2xl border border-line bg-white p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted">Profile</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -379,6 +353,41 @@ export function QuickConnectPage() {
                   </ul>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+              <GuestPreviewHeading />
+              <ConnectCardShell profile={draft} links={hub.links} mode="preview" />
+              <div className="rounded-2xl border border-line bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Public link</p>
+                <p className="mt-2 break-all font-mono text-xs">{hub.publicUrl}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={!unlocked}
+                    onClick={() => void copyLink()}
+                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line px-3 text-xs font-semibold disabled:opacity-50"
+                  >
+                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    Copy
+                  </button>
+                  <a
+                    href={unlocked ? hub.publicPath : undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      if (!unlocked) e.preventDefault();
+                    }}
+                    className={`inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold ${
+                      unlocked ? 'bg-brand text-white' : 'cursor-not-allowed bg-paper text-muted'
+                    }`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Open
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       ) : null}
