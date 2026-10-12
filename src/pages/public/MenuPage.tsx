@@ -160,32 +160,34 @@ export function MenuPage() {
                         alt={item.name}
                         placeholder={menu.imagePlaceholder ?? 'retail'}
                       />
-                      <div className="flex-1">
-                        <p className="font-semibold">
-                          {menu.copy.showVegBadge ? (
-                            <span
-                              className={`mr-2 inline-block h-2.5 w-2.5 rounded-sm border ${
-                                item.isNonVeg
-                                  ? 'border-red-700 bg-red-600'
-                                  : 'border-green-700 bg-green-600'
-                              }`}
-                              aria-hidden
-                            />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="min-w-0 font-semibold">
+                            {menu.copy.showVegBadge ? (
+                              <span
+                                className={`mr-2 inline-block h-2.5 w-2.5 rounded-sm border ${
+                                  item.isNonVeg
+                                    ? 'border-red-700 bg-red-600'
+                                    : 'border-green-700 bg-green-600'
+                                }`}
+                                aria-hidden
+                              />
+                            ) : null}
+                            {item.name}
+                          </p>
+                          {price !== '—' ? (
+                            <p className="shrink-0 text-right font-semibold tabular-nums whitespace-nowrap">
+                              {price}
+                            </p>
                           ) : null}
-                          {item.name}
-                        </p>
+                        </div>
                         {item.description ? (
-                          <p className="mt-0.5 text-sm text-muted">{item.description}</p>
+                          <p className="mt-0.5 line-clamp-2 text-sm text-muted">{item.description}</p>
+                        ) : null}
+                        {detail && detail !== price ? (
+                          <p className="mt-0.5 text-xs leading-snug text-muted">{detail}</p>
                         ) : null}
                       </div>
-                      {price !== '—' ? (
-                        <p className="shrink-0 text-right font-semibold tabular-nums">
-                          {price}
-                          {detail && detail !== price ? (
-                            <span className="mt-0.5 block text-xs font-normal text-muted">{detail}</span>
-                          ) : null}
-                        </p>
-                      ) : null}
                     </li>
                   );
                 })}

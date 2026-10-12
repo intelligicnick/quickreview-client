@@ -9,6 +9,9 @@ import { CategoryPriceVariantsEditor } from '../components/quickcommerce/Categor
 import { ItemPriceVariantsEditor } from '../components/quickcommerce/ItemPriceVariantsEditor';
 import { MenuItemPriceInputs } from '../components/quickcommerce/MenuItemPriceInputs';
 import { QuickCommerceOnboarding } from '../components/quickcommerce/QuickCommerceOnboarding';
+import { QrCodePreview } from '../components/QrCodePreview';
+import { QrProductCard } from '../components/QrProductCard';
+import { productStatusLabel } from '../lib/location-workspace';
 import { api, ApiError } from '../lib/api';
 import { useLocationContext } from '../lib/location-context';
 import {
@@ -63,7 +66,9 @@ type MenuCopy = {
   moduleSubtitle: string;
   pageTitle: string;
   categoryLabel: string;
+  categoryLabelPlural: string;
   itemLabel: string;
+  itemLabelPlural: string;
   addCategory: string;
   addItem: string;
   emptyHint: string;
@@ -494,11 +499,19 @@ export function QuickMenuPage() {
               />
 
               {workspaceTab === 'qr' ? (
-                <div className="mt-6 rounded-2xl border border-line bg-white p-5">
-                  <p className="text-sm font-semibold">Public link & QR</p>
-                  <p className="mt-1 text-xs text-muted">Guests open this URL from your QR code.</p>
-                  <p className="mt-3 break-all font-mono text-xs">{hub.publicUrl}</p>
-                  <label className="mt-4 block text-sm">
+                <div className="mt-6 max-w-xl">
+                  <QrProductCard
+                    title="Commerce QR & link"
+                    purpose="Guests scan to browse your catalogue"
+                    publicUrl={hub.publicUrl}
+                    publicPath={hub.publicPath}
+                    unlocked={unlocked}
+                    statusLabel={productStatusLabel(unlocked, hub.menuAccess.status)}
+                    manageHref="/app/qr"
+                    manageLabel="All QR codes"
+                    unlockTo="/app/subscription"
+                  />
+                  <label className="mt-4 block rounded-2xl border border-line bg-white p-4 text-sm">
                     <span className="font-semibold">Custom slug</span>
                     <input
                       className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-mono text-sm"
@@ -510,17 +523,70 @@ export function QuickMenuPage() {
                       }}
                     />
                   </label>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                </div>
+              ) : null}
+
+              {workspaceTab === 'bundles' ? (
+                <div className="mt-6">
+                  <p className="text-sm text-muted">
+                    Organise {copy.categoryLabelPlural.toLowerCase()} — add products on the Products tab.
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-end gap-2">
+                    <label className="flex-1 text-sm">
+                      <span className="font-semibold">{copy.addCategory}</span>
+                      <input
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        placeholder={copy.categoryLabel}
+                      />
+                    </label>
                     <button
                       type="button"
-                      disabled={!unlocked}
-                      onClick={() => void copyLink()}
-                      className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line px-3 text-xs font-semibold disabled:opacity-50"
+                      onClick={() => void addCategory()}
+                      className="inline-flex min-h-10 items-center gap-1 rounded-xl bg-brand px-4 text-sm font-semibold text-white"
                     >
-                      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                      Copy link
+                      <Plus className="h-4 w-4" />
+                      Add
                     </button>
                   </div>
+                  {hub.categories.length === 0 ? (
+                    <p className="mt-4 text-sm text-muted">No {copy.categoryLabel.toLowerCase()} yet.</p>
+                  ) : (
+                    <ul className="mt-6 space-y-3">
+                      {hub.categories.map((category) => (
+                        <li
+                          key={category.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3"
+                        >
+                          <div>
+                            <p className="font-semibold">{category.name}</p>
+                            <p className="text-xs text-muted">
+                              {category.items.length}{' '}
+                              {category.items.length === 1 ? copy.itemLabel.toLowerCase() : copy.itemLabelPlural.toLowerCase()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setWorkspaceTab('primary')}
+                              className="rounded-xl border border-line px-3 py-1.5 text-xs font-semibold"
+                            >
+                              Manage {copy.itemLabelPlural.toLowerCase()}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void removeCategory(category.id)}
+                              className="rounded-lg p-1.5 text-muted hover:bg-red-50 hover:text-red-700"
+                              aria-label={`Delete ${category.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ) : null}
 
@@ -533,7 +599,10 @@ export function QuickMenuPage() {
                 </div>
               ) : null}
 
-              {workspaceTab !== 'primary' && workspaceTab !== 'qr' && workspaceTab !== 'import' ? (
+              {workspaceTab !== 'primary' &&
+              workspaceTab !== 'bundles' &&
+              workspaceTab !== 'qr' &&
+              workspaceTab !== 'import' ? (
                 <div className="mt-6 rounded-2xl border border-dashed border-line bg-paper px-5 py-10 text-center">
                   <p className="font-semibold">{copy.tabs.find((t) => t.id === workspaceTab)?.label}</p>
                   <p className="mt-2 text-sm text-muted">This section is on the roadmap — your categories still work below.</p>
@@ -812,7 +881,14 @@ export function QuickMenuPage() {
                 priceVariantScope={hub.priceVariantScope}
               />
               <div className="rounded-2xl border border-line bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Public link</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Public link & QR</p>
+                {unlocked ? (
+                  <div className="mt-3 flex justify-center rounded-xl bg-paper py-3">
+                    <QrCodePreview value={hub.publicUrl} size={120} label="Commerce catalogue QR" />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted">Activate Quick Commerce to show your QR code.</p>
+                )}
                 <p className="mt-2 break-all font-mono text-xs">{hub.publicUrl}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button

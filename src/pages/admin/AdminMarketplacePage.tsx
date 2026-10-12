@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
-import { marketplaceImageSrc } from '../../lib/marketplace-image';
+import { MarketplaceProductPhoto } from '../../components/marketplace/MarketplaceProductPhoto';
 
 type Category = {
   id: string;
@@ -297,22 +297,12 @@ export function AdminMarketplacePage() {
           </label>
         </div>
         <ul className="mt-4 space-y-6">
-          {filteredProducts.map((product) => {
-            const imageSrc = marketplaceImageSrc(product.imageUrl, product.name);
-            return (
+          {filteredProducts.map((product) => (
             <li key={product.id} className="border-b border-line pb-6 last:border-0">
               <div className="flex flex-wrap gap-4">
-                {imageSrc ? (
-                  <img
-                    src={imageSrc}
-                    alt=""
-                    className="h-24 w-32 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="flex h-24 w-32 items-center justify-center rounded-xl bg-paper text-xs text-muted">
-                    No photo
-                  </div>
-                )}
+                <div className="w-full max-w-[200px] shrink-0 sm:w-[200px]">
+                  <MarketplaceProductPhoto product={product} className="max-h-[280px]" />
+                </div>
                 <div className="min-w-0 flex-1">
                   <input
                     className="w-full rounded-lg border border-line px-2 py-1 font-semibold"
@@ -388,8 +378,7 @@ export function AdminMarketplacePage() {
                 </div>
               </div>
             </li>
-            );
-          })}
+          ))}
         </ul>
         {filteredProducts.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No products in this category.</p>

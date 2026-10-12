@@ -233,39 +233,39 @@ export function AdminQrBatchesPage() {
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
-        <table className="w-full min-w-[800px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
-              <th className="px-3 py-2 w-24">QR</th>
-              <th className="px-3 py-2">Code</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Assigned to</th>
-              <th className="px-3 py-2">Opens</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((row) => {
-              const qrValue = qrEncodeValue(row);
-              return (
-                <tr key={row.id} className="border-b border-line last:border-0">
-                  <td className="px-3 py-2 align-top">
-                    <QrCodePreview value={qrValue} size={72} label={`QR ${row.code}`} />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <p className="font-mono font-semibold">{row.code}</p>
-                    <p className="mt-1 max-w-xs break-all text-xs text-muted">{qrValue}</p>
-                  </td>
-                  <td className="px-3 py-2 align-top text-muted">
-                    {row.locationId ? 'Assigned' : row.isPrinted ? 'Printed' : 'Not printed'}
-                  </td>
-                  <td className="px-3 py-2 align-top">{row.locationName ?? '—'}</td>
-                  <td className="px-3 py-2 align-top">{opensLabel(row)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {filtered.map((row) => {
+          const qrValue = qrEncodeValue(row);
+          const status = row.locationId ? 'Assigned' : row.isPrinted ? 'Printed' : 'Not printed';
+          return (
+            <article
+              key={row.id}
+              className="flex flex-col rounded-2xl border border-line bg-white p-4"
+            >
+              <div className="flex items-start gap-3">
+                <QrCodePreview value={qrValue} size={88} label={`QR ${row.code}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-sm font-semibold">{row.code}</p>
+                  <p className="mt-1 break-all text-xs text-muted">{qrValue}</p>
+                </div>
+              </div>
+              <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-line pt-3 text-sm">
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Status</dt>
+                  <dd className="mt-0.5 text-muted">{status}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Opens</dt>
+                  <dd className="mt-0.5">{opensLabel(row)}</dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Assigned to</dt>
+                  <dd className="mt-0.5">{row.locationName ?? '—'}</dd>
+                </div>
+              </dl>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

@@ -126,33 +126,35 @@ export function MenuGuestPreview({
                               size="sm"
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-semibold leading-snug">
-                                {copy.showVegBadge ? (
-                                  <span
-                                    className={`mr-1.5 inline-block h-2 w-2 rounded-sm border ${
-                                      item.isNonVeg
-                                        ? 'border-red-700 bg-red-600'
-                                        : 'border-green-700 bg-green-600'
-                                    }`}
-                                    aria-hidden
-                                  />
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="min-w-0 text-[13px] font-semibold leading-snug">
+                                  {copy.showVegBadge ? (
+                                    <span
+                                      className={`mr-1.5 inline-block h-2 w-2 rounded-sm border ${
+                                        item.isNonVeg
+                                          ? 'border-red-700 bg-red-600'
+                                          : 'border-green-700 bg-green-600'
+                                      }`}
+                                      aria-hidden
+                                    />
+                                  ) : null}
+                                  {item.name}
+                                </p>
+                                {price !== '—' ? (
+                                  <p className="shrink-0 text-right text-[13px] font-semibold tabular-nums whitespace-nowrap">
+                                    {price}
+                                  </p>
                                 ) : null}
-                                {item.name}
-                              </p>
+                              </div>
                               {item.description ? (
-                                <p className="mt-0.5 text-[11px] leading-snug text-muted">{item.description}</p>
+                                <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">
+                                  {item.description}
+                                </p>
+                              ) : null}
+                              {detail && detail !== price ? (
+                                <p className="mt-0.5 text-[10px] leading-snug text-muted">{detail}</p>
                               ) : null}
                             </div>
-                            {price !== '—' ? (
-                              <p className="shrink-0 text-right text-[13px] font-semibold tabular-nums">
-                                {price}
-                                {detail && detail !== price ? (
-                                  <span className="mt-0.5 block text-[10px] font-normal text-muted">
-                                    {detail}
-                                  </span>
-                                ) : null}
-                              </p>
-                            ) : null}
                           </li>
                         );
                       })}

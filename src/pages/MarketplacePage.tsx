@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ShoppingBag } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
-import { marketplaceImageSrc } from '../lib/marketplace-image';
+import { MarketplaceProductPhoto } from '../components/marketplace/MarketplaceProductPhoto';
+import { marketplaceDimensionBadge } from '../lib/marketplace-image';
 import { useLocationContext } from '../lib/location-context';
 
 type Category = {
@@ -73,18 +74,6 @@ function catalogSections(hub: Hub): Array<{ category: Category; products: Produc
   return sections;
 }
 
-function productPreviewAspect(product: Product): string {
-  const name = product.name.toLowerCase();
-  const dims = (product.dimensions ?? '').toLowerCase();
-  if (name.includes('nfc') || name.includes('card') || dims.includes('mm') || dims.includes('cr80')) {
-    return 'aspect-[856/540]';
-  }
-  if (name.includes('standee') || dims.includes('6')) {
-    return 'aspect-[2/3]';
-  }
-  return 'aspect-[4/3]';
-}
-
 function ProductCard({
   product,
   onOrder,
@@ -92,33 +81,30 @@ function ProductCard({
   product: Product;
   onOrder: (product: Product) => void;
 }) {
-  const previewAspect = productPreviewAspect(product);
-  const imageSrc = marketplaceImageSrc(product.imageUrl, product.name);
+  const sizeBadge = marketplaceDimensionBadge(product.dimensions);
   return (
-    <div className="flex flex-col rounded-2xl border border-line bg-white p-5">
-      {imageSrc ? (
-        <img
-          src={imageSrc}
-          alt=""
-          className={`${previewAspect} w-full rounded-xl bg-paper object-contain`}
-        />
+    <div className="flex flex-col rounded-2xl border border-line bg-white p-4 sm:p-5">
+      <MarketplaceProductPhoto product={product} />
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <p className="font-bold leading-snug">{product.name}</p>
+        {sizeBadge ? (
+          <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand">
+            {sizeBadge}
+          </span>
+        ) : null}
+      </div>
+      {product.description ? (
+        <p className="mt-2 flex-1 text-sm text-muted line-clamp-2">{product.description}</p>
       ) : (
-        <div
-          className={`flex ${previewAspect} w-full items-center justify-center rounded-xl bg-paper text-xs font-semibold text-muted`}
-        >
-          Photo coming soon
-        </div>
+        <div className="flex-1" />
       )}
-      <p className="mt-4 font-bold">{product.name}</p>
-      {product.dimensions ? <p className="text-xs text-muted">{product.dimensions}</p> : null}
-      <p className="mt-2 flex-1 text-sm text-muted">{product.description}</p>
-      <p className="mt-3 text-xl font-extrabold">₹{product.priceInr}</p>
+      <p className="mt-3 text-2xl font-extrabold tracking-tight">₹{product.priceInr}</p>
       <button
         type="button"
         onClick={() => onOrder(product)}
-        className="mt-4 w-full rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+        className="mt-4 w-full rounded-xl bg-brand px-3 py-3 text-sm font-semibold text-white hover:bg-brand-dark"
       >
-        Order
+        Order now
       </button>
     </div>
   );
