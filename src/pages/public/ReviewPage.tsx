@@ -19,6 +19,7 @@ type PublicReview = {
   googlePlaceId: string | null;
   googleReviewUrl: string | null;
   reviewQuestions: string[];
+  answerOptions?: string[];
 };
 
 type Step = 'rating' | 'questions' | 'generating' | 'draft' | 'private-feedback' | 'thank-you';
@@ -44,6 +45,15 @@ const DEFAULT_REVIEW_QUESTIONS = [
   'What did you enjoy most about your visit?',
   'Was there anything that stood out? (staff, ambiance, service…)',
   'Who would you recommend us to?',
+];
+
+const DEFAULT_ANSWER_OPTIONS = [
+  'Friendly staff',
+  'Great food',
+  'Ambience',
+  'Fast service',
+  'Clean place',
+  'Good value',
 ];
 
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
@@ -73,8 +83,8 @@ export function ReviewPage() {
   const [hovered, setHovered] = useState(0);
   const [selected, setSelected] = useState(0);
   const [questionAnswers, setQuestionAnswers] = useState<string[]>([]);
-  const [draftText, setDraftText] = useState('');
-  const [draftAlternatives, setDraftAlternatives] = useState<string[]>([]);
+  const [draftVersions, setDraftVersions] = useState<string[]>([]);
+  const [activeWording, setActiveWording] = useState(0);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [messageIndex, setMessageIndex] = useState(0);
   const [privateFeedbackText, setPrivateFeedbackText] = useState('');
@@ -133,6 +143,9 @@ export function ReviewPage() {
   const activeQuestions =
     shop?.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
 
+  const answerOptions =
+    shop?.answerOptions?.length ? shop.answerOptions : DEFAULT_ANSWER_OPTIONS;
+
   async function generateDraft(starRating: number) {
     if (!shop) return;
     const answers = buildDraftAnswers(activeQuestions, questionAnswers);
@@ -142,7 +155,8 @@ export function ReviewPage() {
     }
     setStep('generating');
     setDraftError(null);
-    setDraftAlternatives([]);
+    setDraftVersions([]);
+    setActiveWording(0);
     try {
       const data = await api<{ suggestions: string[] }>(
         `/api/public/r/${encodeURIComponent(code)}/suggestions`,
@@ -151,14 +165,12 @@ export function ReviewPage() {
       const list = data.suggestions.length
         ? data.suggestions
         : fallbackDrafts(shop.name, starRating, answers[0]?.answer);
-      setDraftText(list[0] ?? '');
-      setDraftAlternatives(list.slice(1));
+      setDraftVersions(list);
       setStep('draft');
     } catch (err) {
       const fallback = fallbackDrafts(shop.name, starRating, answers[0]?.answer);
       setDraftError(err instanceof Error ? err.message : 'Could not generate your review.');
-      setDraftText(fallback[0] ?? '');
-      setDraftAlternatives(fallback.slice(1));
+      setDraftVersions(fallback);
       setStep('draft');
     }
   }
@@ -234,8 +246,8 @@ export function ReviewPage() {
   function handleBackToStars() {
     setStep('rating');
     setQuestionAnswers([]);
-    setDraftText('');
-    setDraftAlternatives([]);
+    setDraftVersions([]);
+    setActiveWording(0);
     setDraftError(null);
     setPrivateFeedbackText('');
     setPrivateFeedbackError(null);
@@ -244,15 +256,43 @@ export function ReviewPage() {
 
   function handleBackToQuestions() {
     setStep('questions');
-    setDraftText('');
-    setDraftAlternatives([]);
+    setDraftVersions([]);
+    setActiveWording(0);
     setDraftError(null);
   }
 
-  function applyAlternative(index: number) {
-    const text = draftAlternatives[index];
-    if (!text) return;
-    setDraftText(text);
+  function parsedAnswerOptions(value: string): string[] {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  function isAnswerOptionSelected(value: string, option: string): boolean {
+    const key = option.toLowerCase();
+    return parsedAnswerOptions(value).some((part) => part.toLowerCase() === key);
+  }
+
+  function toggleAnswerOption(questionIndex: number, option: string) {
+    const next = [...questionAnswers];
+    const parts = parsedAnswerOptions(next[questionIndex] ?? '');
+    const key = option.toLowerCase();
+    const existing = parts.findIndex((part) => part.toLowerCase() === key);
+    if (existing >= 0) parts.splice(existing, 1);
+    else parts.push(option);
+    next[questionIndex] = parts.join(', ');
+    setQuestionAnswers(next);
+    if (draftError) setDraftError(null);
+  }
+
+  const draftText = draftVersions[activeWording] ?? '';
+
+  function updateDraftText(text: string) {
+    setDraftVersions((prev) => {
+      const next = prev.length ? [...prev] : [''];
+      next[activeWording] = text;
+      return next;
+    });
   }
 
   const activeRating = hovered || selected;
@@ -383,6 +423,28 @@ export function ReviewPage() {
                         <span className="font-normal text-muted"> (optional)</span>
                       )}
                     </label>
+                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tap to select">
+                      {answerOptions.map((option) => {
+                        const selected = isAnswerOptionSelected(
+                          questionAnswers[index] ?? '',
+                          option,
+                        );
+                        return (
+                          <button
+                            key={`${index}-${option}`}
+                            type="button"
+                            onClick={() => toggleAnswerOption(index, option)}
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                              selected
+                                ? 'border-brand bg-brand/10 text-brand'
+                                : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <input
                       id={`review-q-${index}`}
                       type="text"
@@ -394,9 +456,9 @@ export function ReviewPage() {
                         setQuestionAnswers(next);
                         if (draftError) setDraftError(null);
                       }}
-                      className="mt-2 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
-                      placeholder={index === 0 ? 'e.g. friendly staff, great coffee…' : 'Your answer'}
-                      required={index === 0}
+                      className="mt-3 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                      placeholder={index === 0 ? 'Or type your own…' : 'Add more detail (optional)'}
+                      required={index === 0 && !parsedAnswerOptions(questionAnswers[index] ?? '').length}
                     />
                   </div>
                 ))}
@@ -488,21 +550,27 @@ export function ReviewPage() {
                 <textarea
                   id="google-review-draft"
                   value={draftText}
-                  onChange={(e) => setDraftText(e.target.value)}
+                  onChange={(e) => updateDraftText(e.target.value)}
                   rows={6}
                   maxLength={4000}
                   className="min-h-[10rem] w-full flex-1 resize-y rounded-2xl border border-line bg-paper px-4 py-3.5 text-sm leading-relaxed text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                 />
-                {draftAlternatives.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {draftAlternatives.map((_, index) => (
+                {draftVersions.length > 1 ? (
+                  <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Review wording">
+                    {draftVersions.map((_, index) => (
                       <button
                         key={index}
                         type="button"
-                        onClick={() => applyAlternative(index)}
-                        className="rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-brand hover:text-brand"
+                        role="tab"
+                        aria-selected={activeWording === index}
+                        onClick={() => setActiveWording(index)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          activeWording === index
+                            ? 'border-brand bg-brand/10 text-brand'
+                            : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
+                        }`}
                       >
-                        Wording {index + 2}
+                        Wording {index + 1}
                       </button>
                     ))}
                   </div>
