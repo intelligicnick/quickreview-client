@@ -22,7 +22,7 @@ type PublicReview = {
   answerOptionsPerQuestion?: string[][];
 };
 
-type Step = 'rating' | 'questions' | 'generating' | 'draft' | 'private-feedback' | 'thank-you';
+type Step = 'rate' | 'generating' | 'draft' | 'thank-you';
 
 type DraftAnswer = { question: string; answer: string };
 
@@ -42,14 +42,14 @@ const GENERATING_MESSAGES = [
 ];
 
 const DEFAULT_REVIEW_QUESTIONS = [
-  'What did you enjoy most about your visit?',
-  'Was there anything that stood out? (optional)',
+  'What did we do well for you?',
+  'What mattered most about your experience? (optional)',
   'Who would you recommend us to? (optional)',
 ];
 
 const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
-  ['Friendly staff', 'Great quality', 'Welcoming atmosphere'],
-  ['Fast service', 'Clean & tidy', 'Good value'],
+  ['Clear communication', 'Quality work', 'Friendly team'],
+  ['On time', 'Fair pricing', 'Easy process'],
   ['Friends & family', 'Colleagues', 'Anyone nearby'],
 ];
 
@@ -57,11 +57,17 @@ const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
 
 function fallbackDrafts(name: string, stars: number, highlight?: string): string[] {
   const bit = highlight?.trim() || 'great service';
-  return [
+  const drafts = [
     `Had a ${stars}-star experience at ${name}. ${bit}. Would recommend to friends and family.`,
     `${name} exceeded my expectations — ${bit}. Friendly team and great service.`,
     `Really pleased with my visit to ${name}. ${bit}. Professional and worth every rupee.`,
+    `Worth stopping by ${name} — ${bit}. I'll be back.`,
   ];
+  for (let i = drafts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [drafts[i], drafts[j]] = [drafts[j], drafts[i]];
+  }
+  return drafts;
 }
 
 function buildDraftAnswers(questions: string[], answers: string[]): DraftAnswer[] {
@@ -76,7 +82,7 @@ export function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [errorTitle, setErrorTitle] = useState('Unavailable');
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<Step>('rating');
+  const [step, setStep] = useState<Step>('rate');
   const [hovered, setHovered] = useState(0);
   const [selected, setSelected] = useState(0);
   const [questionAnswers, setQuestionAnswers] = useState<string[]>([]);
@@ -179,22 +185,26 @@ export function ReviewPage() {
   }
 
   function handleSelectRating(value: number) {
-    if (!shop || step !== 'rating') return;
+    if (!shop || step !== 'rate') return;
+    const prev = selected;
     setSelected(value);
     void record('star', { stars: value }).catch(() => {
       /* still advance UX */
     });
     if (value <= 3) {
-      setPrivateFeedbackText('');
+      if (prev >= 4) setQuestionAnswers([]);
       setPrivateFeedbackError(null);
-      setStep('private-feedback');
+      setDraftError(null);
       return;
     }
-    const questions =
-      shop.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
-    setQuestionAnswers(questions.map(() => ''));
+    if (prev <= 3 || !questionAnswers.length) {
+      const questions =
+        shop.reviewQuestions?.length ? shop.reviewQuestions : DEFAULT_REVIEW_QUESTIONS;
+      setQuestionAnswers(questions.map(() => ''));
+    }
+    setPrivateFeedbackText('');
+    setPrivateFeedbackError(null);
     setDraftError(null);
-    setStep('questions');
   }
 
   function handleSubmitQuestions(event: FormEvent<HTMLFormElement>) {
@@ -246,19 +256,8 @@ export function ReviewPage() {
     window.open(shop.googleReviewUrl, '_blank', 'noopener,noreferrer');
   }
 
-  function handleBackToStars() {
-    setStep('rating');
-    setQuestionAnswers([]);
-    setDraftVersions([]);
-    setActiveWording(0);
-    setDraftError(null);
-    setPrivateFeedbackText('');
-    setPrivateFeedbackError(null);
-    setHovered(0);
-  }
-
-  function handleBackToQuestions() {
-    setStep('questions');
+  function handleBackToRate() {
+    setStep('rate');
     setDraftVersions([]);
     setActiveWording(0);
     setDraftError(null);
@@ -289,14 +288,6 @@ export function ReviewPage() {
   }
 
   const draftText = draftVersions[activeWording] ?? '';
-
-  function updateDraftText(text: string) {
-    setDraftVersions((prev) => {
-      const next = prev.length ? [...prev] : [''];
-      next[activeWording] = text;
-      return next;
-    });
-  }
 
   const activeRating = hovered || selected;
   const previewOption = hovered
@@ -341,9 +332,9 @@ export function ReviewPage() {
               </div>
             </RateCard>
           </div>
-        ) : shop && step === 'rating' ? (
+        ) : shop && step === 'rate' ? (
           <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard>
+            <RateCard alignTop={selected > 0}>
               <div className="text-center">
                 <h1 className="font-display text-[1.65rem] font-bold leading-tight tracking-tight text-ink sm:text-[1.85rem]">
                   {shop.name}
@@ -400,117 +391,115 @@ export function ReviewPage() {
                   ) : null}
                 </div>
 
-                <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                  Tap a star to share your review
-                </p>
+                {!selected ? (
+                  <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    Tap a star to share your review
+                  </p>
+                ) : null}
               </div>
-            </RateCard>
-          </div>
-        ) : shop && step === 'questions' ? (
-          <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard showBack onBack={handleBackToStars}>
-              <div className="text-center">
-                <h1 className="font-display text-[1.55rem] font-bold tracking-tight text-ink sm:text-[1.7rem]">
-                  Help us write your review
-                </h1>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted">
-                  Answer a few quick questions — we&apos;ll draft a Google review you can edit.
-                </p>
-              </div>
-              <form className="mt-6 space-y-4" onSubmit={(e) => void handleSubmitQuestions(e)}>
-                {activeQuestions.map((question, index) => (
-                  <div key={index}>
-                    <label className="block text-sm font-semibold text-ink" htmlFor={`review-q-${index}`}>
-                      {question}
-                      {index === 0 ? null : (
-                        <span className="font-normal text-muted"> (optional)</span>
-                      )}
-                    </label>
-                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tap to select">
-                      {chipsForQuestion(index).map((option) => {
-                        const selected = isAnswerOptionSelected(
-                          questionAnswers[index] ?? '',
-                          option,
-                        );
-                        return (
-                          <button
-                            key={`${index}-${option}`}
-                            type="button"
-                            onClick={() => toggleAnswerOption(index, option)}
-                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                              selected
-                                ? 'border-brand bg-brand/10 text-brand'
-                                : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
-                            }`}
-                          >
-                            {option}
-                          </button>
-                        );
-                      })}
+
+              {selected >= 1 && selected <= 3 ? (
+                <form className="mt-8 border-t border-line pt-6" onSubmit={(e) => void handleSubmitPrivateFeedback(e)}>
+                  <div className="text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand">
+                      <MessageSquareLock className="h-6 w-6" strokeWidth={1.75} aria-hidden />
                     </div>
-                    <input
-                      id={`review-q-${index}`}
-                      type="text"
-                      maxLength={500}
-                      value={questionAnswers[index] ?? ''}
-                      onChange={(e) => {
-                        const next = [...questionAnswers];
-                        next[index] = e.target.value;
-                        setQuestionAnswers(next);
-                        if (draftError) setDraftError(null);
-                      }}
-                      className="mt-3 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
-                      placeholder={index === 0 ? 'Or type your own…' : 'Add more detail (optional)'}
-                      required={index === 0 && !parsedAnswerOptions(questionAnswers[index] ?? '').length}
-                    />
+                    <h2 className="mt-4 font-display text-lg font-bold tracking-tight text-ink">
+                      Private feedback
+                    </h2>
+                    <p className="mt-2 text-sm leading-relaxed text-muted">
+                      Only {shop.name} sees this — nothing posts to Google.
+                    </p>
                   </div>
-                ))}
-                {draftError ? (
-                  <p className="text-sm text-red-600" role="alert">{draftError}</p>
-                ) : null}
-                <button type="submit" className="btn-gradient w-full">
-                  Create my review
-                  <Sparkles className="ml-1.5 inline h-4 w-4" aria-hidden />
-                </button>
-              </form>
-            </RateCard>
-          </div>
-        ) : shop && step === 'private-feedback' ? (
-          <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard showBack onBack={handleBackToStars}>
-              <div className="text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand/10 text-brand">
-                  <MessageSquareLock className="h-7 w-7" strokeWidth={1.75} aria-hidden />
-                </div>
-                <h1 className="mt-5 font-display text-[1.55rem] font-bold tracking-tight text-ink sm:text-[1.7rem]">
-                  Tell us what happened
-                </h1>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted">
-                  Your feedback stays private with {shop.name}. It never posts to Google.
-                </p>
-              </div>
-              <form className="mt-6" onSubmit={(e) => void handleSubmitPrivateFeedback(e)}>
-                <label htmlFor="private-feedback" className="sr-only">Private feedback</label>
-                <textarea
-                  id="private-feedback"
-                  value={privateFeedbackText}
-                  onChange={(e) => {
-                    setPrivateFeedbackText(e.target.value);
-                    if (privateFeedbackError) setPrivateFeedbackError(null);
-                  }}
-                  rows={5}
-                  maxLength={2000}
-                  required
-                  placeholder="What could have been better?"
-                  className="w-full resize-y rounded-2xl border border-line bg-white px-4 py-3.5 text-sm leading-relaxed text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
-                />
-                {privateFeedbackError ? (
-                  <p className="mt-2 text-sm text-red-600" role="alert">{privateFeedbackError}</p>
-                ) : null}
-                <button type="submit" disabled={submittingFeedback} className="btn-gradient mt-4 w-full">
-                  {submittingFeedback ? 'Sending…' : 'Send feedback'}
-                </button>
-              </form>
+                  <label htmlFor="private-feedback" className="sr-only">Private feedback</label>
+                  <textarea
+                    id="private-feedback"
+                    value={privateFeedbackText}
+                    onChange={(e) => {
+                      setPrivateFeedbackText(e.target.value);
+                      if (privateFeedbackError) setPrivateFeedbackError(null);
+                    }}
+                    rows={4}
+                    maxLength={2000}
+                    required
+                    placeholder="What could have been better?"
+                    className="mt-4 w-full resize-y rounded-2xl border border-line bg-white px-4 py-3.5 text-sm leading-relaxed text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                  />
+                  {privateFeedbackError ? (
+                    <p className="mt-2 text-sm text-red-600" role="alert">{privateFeedbackError}</p>
+                  ) : null}
+                  <button type="submit" disabled={submittingFeedback} className="btn-gradient mt-4 w-full">
+                    {submittingFeedback ? 'Sending…' : 'Send feedback'}
+                  </button>
+                </form>
+              ) : null}
+
+              {selected >= 4 ? (
+                <form className="mt-8 border-t border-line pt-6 space-y-4" onSubmit={(e) => void handleSubmitQuestions(e)}>
+                  <div className="text-center">
+                    <h2 className="font-display text-lg font-bold tracking-tight text-ink">
+                      A few quick questions
+                    </h2>
+                    <p className="mt-2 text-sm leading-relaxed text-muted">
+                      We&apos;ll frame a Google review on the next screen — pick one and copy.
+                    </p>
+                  </div>
+                  {activeQuestions.map((question, index) => (
+                    <div key={index}>
+                      <label className="block text-sm font-semibold text-ink" htmlFor={`review-q-${index}`}>
+                        {question}
+                        {index === 0 ? null : (
+                          <span className="font-normal text-muted"> (optional)</span>
+                        )}
+                      </label>
+                      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tap to select">
+                        {chipsForQuestion(index).map((option) => {
+                          const chipSelected = isAnswerOptionSelected(
+                            questionAnswers[index] ?? '',
+                            option,
+                          );
+                          return (
+                            <button
+                              key={`${index}-${option}`}
+                              type="button"
+                              onClick={() => toggleAnswerOption(index, option)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                chipSelected
+                                  ? 'border-brand bg-brand/10 text-brand'
+                                  : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <input
+                        id={`review-q-${index}`}
+                        type="text"
+                        maxLength={500}
+                        value={questionAnswers[index] ?? ''}
+                        onChange={(e) => {
+                          const next = [...questionAnswers];
+                          next[index] = e.target.value;
+                          setQuestionAnswers(next);
+                          if (draftError) setDraftError(null);
+                        }}
+                        className="mt-3 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                        placeholder={index === 0 ? 'Or type your own…' : 'Add more detail (optional)'}
+                        required={index === 0 && !parsedAnswerOptions(questionAnswers[index] ?? '').length}
+                      />
+                    </div>
+                  ))}
+                  {draftError ? (
+                    <p className="text-sm text-red-600" role="alert">{draftError}</p>
+                  ) : null}
+                  <button type="submit" className="btn-gradient w-full">
+                    Frame my review
+                    <Sparkles className="ml-1.5 inline h-4 w-4" aria-hidden />
+                  </button>
+                </form>
+              ) : null}
             </RateCard>
           </div>
         ) : shop && step === 'thank-you' ? (
@@ -529,7 +518,7 @@ export function ReviewPage() {
           </div>
         ) : shop && step === 'generating' ? (
           <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard showBack onBack={handleBackToQuestions}>
+            <RateCard showBack onBack={handleBackToRate}>
               <div className="flex flex-col items-center py-6 text-center">
                 <Loader2 className="h-14 w-14 animate-spin text-brand" aria-hidden />
                 <p key={messageIndex} className="mt-6 min-h-14 text-[15px] leading-relaxed text-muted" aria-live="polite">
@@ -540,81 +529,83 @@ export function ReviewPage() {
           </div>
         ) : shop && step === 'draft' ? (
           <div className="animate-fade-up flex h-dvh min-h-0 w-full flex-col sm:h-auto sm:w-auto">
-            <RateCard showBack onBack={handleBackToQuestions} fill>
-              <p className="flex shrink-0 items-center justify-center gap-2 text-center text-sm font-bold text-ink">
-                <Sparkles className="h-4 w-4 shrink-0 text-brand" aria-hidden />
-                Edit your review, then post on Google
-              </p>
+            <RateCard showBack onBack={handleBackToRate} fill alignTop>
+              <div className="shrink-0 text-center">
+                <p className="flex items-center justify-center gap-2 text-sm font-bold text-ink">
+                  <Sparkles className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                  Pick a review to copy
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  Each option is worded differently — tap one, then paste on Google.
+                </p>
+              </div>
               {draftError ? (
-                <p className="mt-3 text-center text-sm text-amber-800">{draftError}</p>
+                <p className="mt-3 shrink-0 text-center text-sm text-amber-800">{draftError}</p>
               ) : null}
-              <div className="mt-4 flex min-h-0 flex-1 flex-col">
-                <label htmlFor="google-review-draft" className="sr-only">Google review draft</label>
-                <textarea
-                  id="google-review-draft"
-                  value={draftText}
-                  onChange={(e) => updateDraftText(e.target.value)}
-                  rows={6}
-                  maxLength={4000}
-                  className="min-h-[10rem] w-full flex-1 resize-y rounded-2xl border border-line bg-paper px-4 py-3.5 text-sm leading-relaxed text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
-                />
-                {draftVersions.length > 1 ? (
-                  <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Review wording">
-                    {draftVersions.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeWording === index}
-                        onClick={() => setActiveWording(index)}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          activeWording === index
-                            ? 'border-brand bg-brand/10 text-brand'
-                            : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
-                        }`}
-                      >
-                        Wording {index + 1}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="shrink-0 space-y-3 pt-4">
+              <div
+                className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pb-2"
+                role="radiogroup"
+                aria-label="Review drafts"
+              >
+                {draftVersions.map((text, index) => {
+                  const picked = activeWording === index;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      role="radio"
+                      aria-checked={picked}
+                      onClick={() => setActiveWording(index)}
+                      className={`w-full rounded-2xl border p-4 text-left transition-colors ${
+                        picked
+                          ? 'border-brand bg-brand/5 ring-2 ring-brand/25'
+                          : 'border-line bg-white hover:border-brand/40'
+                      }`}
+                    >
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                        Option {index + 1}
+                      </span>
+                      <p className="mt-2 text-sm leading-relaxed text-ink">{text}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="shrink-0 space-y-3 border-t border-line pt-4">
+                <button
+                  type="button"
+                  onClick={() => selected && void generateDraft(selected)}
+                  className="w-full rounded-xl border border-line bg-white py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand"
+                >
+                  New wordings
+                </button>
+                {shop.googleReviewUrl ? (
                   <button
                     type="button"
-                    onClick={() => selected && void generateDraft(selected)}
-                    className="w-full rounded-xl border border-line bg-white py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand"
+                    disabled={!draftText.trim()}
+                    onClick={() => void handleCopyAndOpenGoogle()}
+                    className="btn-gradient w-full disabled:opacity-50"
                   >
-                    Regenerate from my answers
+                    Copy selected &amp; open Google
+                    <span aria-hidden className="ml-1">→</span>
                   </button>
-                  {shop.googleReviewUrl ? (
-                    <button
-                      type="button"
-                      disabled={!draftText.trim()}
-                      onClick={() => void handleCopyAndOpenGoogle()}
-                      className="btn-gradient w-full disabled:opacity-50"
-                    >
-                      Copy and open Google
-                      <span aria-hidden className="ml-1">→</span>
-                    </button>
-                  ) : (
-                    <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                      Google review link is not set up for this shop yet.
-                    </p>
-                  )}
-                  <p className="text-center text-xs text-muted">
-                    On Google: paste your text (long-press → Paste) and choose your stars.
+                ) : (
+                  <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                    Google review link is not set up for this shop yet.
                   </p>
-                  {shop.googleReviewUrl ? (
-                    <button
-                      type="button"
-                      onClick={handleWriteOwn}
-                      className="flex w-full items-center justify-center gap-1.5 bg-transparent text-sm text-muted transition-colors hover:text-brand"
-                    >
-                      Open Google without copying
-                      <ArrowUpRight className="h-4 w-4" aria-hidden />
-                    </button>
-                  ) : null}
-                </div>
+                )}
+                <p className="text-center text-xs text-muted">
+                  On Google: long-press the box → Paste, then post with your stars.
+                </p>
+                {shop.googleReviewUrl ? (
+                  <button
+                    type="button"
+                    onClick={handleWriteOwn}
+                    className="flex w-full items-center justify-center gap-1.5 bg-transparent text-sm text-muted transition-colors hover:text-brand"
+                  >
+                    Open Google without copying
+                    <ArrowUpRight className="h-4 w-4" aria-hidden />
+                  </button>
+                ) : null}
               </div>
             </RateCard>
           </div>

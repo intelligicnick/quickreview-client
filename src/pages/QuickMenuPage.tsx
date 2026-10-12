@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Lock, MoreVertical, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import type { MenuImagePlaceholder } from '../components/menu/MenuItemImageCarousel';
-import { MenuGuestPreview } from '../components/menu/MenuGuestPreview';
 import { MenuItemPhotoUpload } from '../components/quickcommerce/MenuItemPhotoUpload';
 import { CatalogCategoryPills } from '../components/quickcommerce/CatalogCategoryPills';
 import { CatalogItemCard } from '../components/quickcommerce/CatalogItemCard';
@@ -167,9 +166,6 @@ export function QuickMenuPage() {
         : tab,
     );
   }, [hub?.copy?.tabs, unavailableCount]);
-
-  const featuredTabLabel =
-    hub?.copy?.tabs.find((t) => t.id === 'featured')?.label ?? "Today's Special";
 
   async function reload() {
     if (!selected) return;
@@ -513,8 +509,8 @@ export function QuickMenuPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
-            <div className="min-w-0">
+          <div className="mt-6">
+            <div className="min-w-0 max-w-4xl">
               <CatalogWorkspaceTabs
                 tabs={workspaceTabs}
                 activeId={workspaceTab}
@@ -877,20 +873,6 @@ export function QuickMenuPage() {
                   ) : null}
                 </div>
               ) : null}
-            </div>
-
-            <div className="lg:sticky lg:top-6 lg:self-start">
-              <MenuGuestPreview
-                locationName={selected.name}
-                locationSubtitle={selected.businessName}
-                copy={copy}
-                categories={hub.categories}
-                imagePlaceholder={imagePlaceholder}
-                locked={!unlocked}
-                priceVariantScope={hub.priceVariantScope}
-                activeCategoryId={selectedCategoryId}
-                featuredTabLabel={featuredTabLabel}
-              />
             </div>
           </div>
         </>
