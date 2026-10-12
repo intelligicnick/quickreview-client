@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Copy, ExternalLink, Lock, Plus, ShoppingBag, Trash2 } from 'lucide-react';
-import { MenuItemImageCarousel, type MenuImagePlaceholder } from '../components/menu/MenuItemImageCarousel';
+import { Lock, MoreVertical, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import type { MenuImagePlaceholder } from '../components/menu/MenuItemImageCarousel';
 import { MenuGuestPreview } from '../components/menu/MenuGuestPreview';
 import { MenuItemPhotoUpload } from '../components/quickcommerce/MenuItemPhotoUpload';
+import { CatalogCategoryPills } from '../components/quickcommerce/CatalogCategoryPills';
+import { CatalogItemCard } from '../components/quickcommerce/CatalogItemCard';
 import { CatalogWorkspaceTabs } from '../components/quickcommerce/CatalogWorkspaceTabs';
 import { CategoryPriceVariantsEditor } from '../components/quickcommerce/CategoryPriceVariantsEditor';
 import { ItemPriceVariantsEditor } from '../components/quickcommerce/ItemPriceVariantsEditor';
 import { MenuItemPriceInputs } from '../components/quickcommerce/MenuItemPriceInputs';
 import { QuickCommerceOnboarding } from '../components/quickcommerce/QuickCommerceOnboarding';
-import { QrCodePreview } from '../components/QrCodePreview';
 import { QrProductCard } from '../components/QrProductCard';
 import { productStatusLabel } from '../lib/location-workspace';
 import { api, ApiError } from '../lib/api';
 import { useLocationContext } from '../lib/location-context';
 import {
   formatMenuItemPrice,
-  formatMenuItemPriceDetail,
   itemPriceOptionsFromDraft,
   itemPriceVariants,
   parsePriceInput,
@@ -108,7 +108,6 @@ export function QuickMenuPage() {
   const [hub, setHub] = useState<Hub | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraft>>({});
@@ -116,6 +115,8 @@ export function QuickMenuPage() {
   const [editDraft, setEditDraft] = useState<ItemDraft>(emptyItemDraft());
   const [workspaceTab, setWorkspaceTab] = useState('primary');
   const [changingCategory, setChangingCategory] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [showAddCategoryField, setShowAddCategoryField] = useState(false);
 
   useEffect(() => {
     if (!selected) {
@@ -138,6 +139,37 @@ export function QuickMenuPage() {
       cancelled = true;
     };
   }, [selected]);
+
+  useEffect(() => {
+    if (!hub?.categories.length) {
+      setSelectedCategoryId(null);
+      return;
+    }
+    if (!selectedCategoryId || !hub.categories.some((c) => c.id === selectedCategoryId)) {
+      setSelectedCategoryId(hub.categories[0].id);
+    }
+  }, [hub?.categories, selectedCategoryId]);
+
+  const unavailableCount = useMemo(() => {
+    if (!hub) return 0;
+    return hub.categories.reduce(
+      (n, cat) => n + cat.items.filter((item) => !item.isAvailable).length,
+      0,
+    );
+  }, [hub]);
+
+  const workspaceTabs = useMemo(() => {
+    const tabs = hub?.copy?.tabs;
+    if (!tabs) return [];
+    return tabs.map((tab) =>
+      tab.id === 'unavailable'
+        ? { ...tab, label: `${tab.label} (${unavailableCount})` }
+        : tab,
+    );
+  }, [hub?.copy?.tabs, unavailableCount]);
+
+  const featuredTabLabel =
+    hub?.copy?.tabs.find((t) => t.id === 'featured')?.label ?? "Today's Special";
 
   async function reload() {
     if (!selected) return;
@@ -376,21 +408,12 @@ export function QuickMenuPage() {
     }
   }
 
-  async function copyLink() {
-    if (!hub) return;
-    try {
-      await navigator.clipboard.writeText(hub.publicUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
   const unlocked = hub?.menuUnlocked ?? false;
   const copy = hub?.copy;
   const imagePlaceholder = hub?.imagePlaceholder ?? 'retail';
   const categoryScoped = hub?.priceVariantScope === 'category';
+  const activeCategory =
+    hub?.categories.find((c) => c.id === selectedCategoryId) ?? hub?.categories[0] ?? null;
 
   return (
     <div>
@@ -490,10 +513,10 @@ export function QuickMenuPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
-            <div>
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
+            <div className="min-w-0">
               <CatalogWorkspaceTabs
-                tabs={copy.tabs}
+                tabs={workspaceTabs}
                 activeId={workspaceTab}
                 onChange={setWorkspaceTab}
               />
@@ -610,312 +633,264 @@ export function QuickMenuPage() {
               ) : null}
 
               {workspaceTab === 'primary' ? (
-              <>
-              <div className="mt-6 flex flex-wrap items-end gap-2">
-            <label className="flex-1 text-sm">
-              <span className="font-semibold">{copy.addCategory}</span>
-              <input
-                className="mt-1 w-full rounded-xl border border-line px-3 py-2"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder={copy.categoryLabel}
-              />
-            </label>
-                <button
-                  type="button"
-                  onClick={() => void addCategory()}
-                  className="inline-flex min-h-10 items-center gap-1 rounded-xl bg-brand px-4 text-sm font-semibold text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </button>
-              </div>
+                <div className="mt-6 space-y-6">
+                  <CatalogCategoryPills
+                    categories={hub.categories}
+                    activeId={selectedCategoryId}
+                    onSelect={setSelectedCategoryId}
+                    addLabel={copy.addCategory}
+                    newName={newCategory}
+                    onNewNameChange={setNewCategory}
+                    showAddField={showAddCategoryField}
+                    onToggleAddField={() => setShowAddCategoryField((v) => !v)}
+                    onAdd={() => {
+                      void addCategory().then(() => {
+                        setShowAddCategoryField(false);
+                      });
+                    }}
+                  />
 
-              {hub.categories.length === 0 ? (
-                <p className="mt-4 text-sm text-muted">No {copy.categoryLabel.toLowerCase()} yet.</p>
-              ) : (
-                <div className="mt-6 space-y-4">
-              {hub.categories.map((category) => {
-                const draft = itemDrafts[category.id] ?? emptyItemDraft();
-                const variants = category.priceVariants ?? [];
-                return (
-                  <div key={category.id} className="rounded-2xl border border-line bg-white p-5">
-                    <div className="flex items-start justify-between gap-2">
-                      <h2 className="font-bold">{category.name}</h2>
-                      <button
-                        type="button"
-                        onClick={() => void removeCategory(category.id)}
-                        className="rounded-lg p-1 text-muted hover:bg-red-50 hover:text-red-700"
-                        aria-label="Delete category"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {categoryScoped ? (
-                      <CategoryPriceVariantsEditor
-                        variants={variants}
-                        busy={busy}
-                        onSave={(priceVariants) => void saveCategoryVariants(category.id, priceVariants)}
-                      />
-                    ) : null}
-                    <ul className="mt-3 space-y-2">
-                      {category.items.map((item) => {
-                        const itemVariants = itemPriceVariants(item, variants, categoryScoped ?? false);
-                        return (
-                        <li
-                          key={item.id}
-                          className="rounded-xl border border-line px-3 py-2 text-sm"
-                        >
-                          {editingItemId === item.id ? (
-                            <div className="space-y-2">
-                              {selected ? (
-                                <MenuItemPhotoUpload
-                                  locationId={selected.id}
-                                  itemId={item.id}
-                                  imageUrls={item.imageUrls}
-                                  placeholder={imagePlaceholder}
-                                  onUpdated={reload}
-                                />
-                              ) : null}
-                              <input
-                                className="w-full rounded-lg border border-line px-2 py-1.5"
-                                value={editDraft.name}
-                                onChange={(e) =>
-                                  setEditDraft((d) => ({ ...d, name: e.target.value }))
+                  {hub.categories.length === 0 ? (
+                    <p className="text-sm text-muted">No {copy.categoryLabel.toLowerCase()} yet.</p>
+                  ) : activeCategory ? (
+                    (() => {
+                      const category = activeCategory;
+                      const draft = itemDrafts[category.id] ?? emptyItemDraft();
+                      const variants = category.priceVariants ?? [];
+                      return (
+                        <div>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h2 className="text-lg font-bold text-ink">{category.name}</h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const el = document.getElementById(`add-item-${category.id}`);
+                                  el?.focus();
+                                }}
+                                className="inline-flex min-h-9 items-center gap-1 rounded-xl bg-brand px-3 text-sm font-semibold text-white"
+                              >
+                                <Plus className="h-4 w-4" aria-hidden />
+                                {copy.addItem}
+                              </button>
+                              <span className="text-xs text-muted">
+                                {category.items.length}{' '}
+                                {category.items.length === 1
+                                  ? copy.itemLabel.toLowerCase()
+                                  : copy.itemLabelPlural.toLowerCase()}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => void removeCategory(category.id)}
+                                className="rounded-lg p-2 text-muted hover:bg-red-50 hover:text-red-700"
+                                aria-label={`Delete ${category.name}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {categoryScoped ? (
+                            <CategoryPriceVariantsEditor
+                              variants={variants}
+                              busy={busy}
+                              onSave={(priceVariants) =>
+                                void saveCategoryVariants(category.id, priceVariants)
+                              }
+                            />
+                          ) : null}
+
+                          <ul className="mt-4 space-y-3">
+                            {category.items.map((item) => {
+                              return (
+                                <li key={item.id}>
+                                  {editingItemId === item.id ? (
+                                    <div className="space-y-2 rounded-2xl border border-line bg-white p-4">
+                                      {selected ? (
+                                        <MenuItemPhotoUpload
+                                          locationId={selected.id}
+                                          itemId={item.id}
+                                          imageUrls={item.imageUrls}
+                                          placeholder={imagePlaceholder}
+                                          onUpdated={reload}
+                                        />
+                                      ) : null}
+                                      <input
+                                        className="w-full rounded-lg border border-line px-2 py-1.5"
+                                        value={editDraft.name}
+                                        onChange={(e) =>
+                                          setEditDraft((d) => ({ ...d, name: e.target.value }))
+                                        }
+                                      />
+                                      <div className="flex flex-wrap gap-2">
+                                        {categoryScoped ? (
+                                          <MenuItemPriceInputs
+                                            variants={variants}
+                                            singlePrice={editDraft.price}
+                                            variantPrices={editDraft.variantPrices}
+                                            onSinglePriceChange={(value) =>
+                                              setEditDraft((d) => ({ ...d, price: value }))
+                                            }
+                                            onVariantPriceChange={(variantId, value) =>
+                                              setEditDraft((d) => ({
+                                                ...d,
+                                                variantPrices: {
+                                                  ...d.variantPrices,
+                                                  [variantId]: value,
+                                                },
+                                              }))
+                                            }
+                                          />
+                                        ) : (
+                                          <ItemPriceVariantsEditor
+                                            options={editDraft.productOptions}
+                                            singlePrice={editDraft.price}
+                                            onOptionsChange={(productOptions) =>
+                                              setEditDraft((d) => ({ ...d, productOptions }))
+                                            }
+                                            onSinglePriceChange={(value) =>
+                                              setEditDraft((d) => ({ ...d, price: value }))
+                                            }
+                                          />
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => void saveEditItem(category)}
+                                          className="rounded-lg bg-brand px-3 py-1 text-xs font-semibold text-white"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingItemId(null)}
+                                          className="rounded-lg border border-line px-3 py-1 text-xs font-semibold"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <CatalogItemCard
+                                      name={item.name}
+                                      description={item.description}
+                                      priceLabel={formatMenuItemPrice(item)}
+                                      imageUrls={item.imageUrls}
+                                      imageUrl={item.imageUrl}
+                                      imagePlaceholder={imagePlaceholder}
+                                      showVegBadge={copy.showVegBadge}
+                                      isNonVeg={item.isNonVeg}
+                                      isAvailable={item.isAvailable}
+                                      onToggleAvailable={(next) =>
+                                        void toggleItemAvailable(item, next)
+                                      }
+                                      onEdit={() =>
+                                        startEditItem(item, category, categoryScoped ?? false)
+                                      }
+                                      onRemove={() => void removeItem(item.id)}
+                                    />
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+
+                          <div className="mt-4 flex flex-wrap gap-2 rounded-2xl border border-dashed border-line bg-paper/80 p-4">
+                            <input
+                              id={`add-item-${category.id}`}
+                              placeholder={copy.itemLabel}
+                              className="min-w-[8rem] flex-1 rounded-xl border border-line bg-white px-3 py-2 text-sm"
+                              value={draft.name}
+                              onChange={(e) =>
+                                setItemDrafts((prev) => ({
+                                  ...prev,
+                                  [category.id]: { ...draft, name: e.target.value },
+                                }))
+                              }
+                            />
+                            {categoryScoped ? (
+                              <MenuItemPriceInputs
+                                variants={variants}
+                                singlePrice={draft.price}
+                                variantPrices={draft.variantPrices}
+                                onSinglePriceChange={(value) =>
+                                  setItemDrafts((prev) => ({
+                                    ...prev,
+                                    [category.id]: { ...draft, price: value },
+                                  }))
+                                }
+                                onVariantPriceChange={(variantId, value) =>
+                                  setItemDrafts((prev) => ({
+                                    ...prev,
+                                    [category.id]: {
+                                      ...draft,
+                                      variantPrices: { ...draft.variantPrices, [variantId]: value },
+                                    },
+                                  }))
                                 }
                               />
-                              <div className="flex flex-wrap gap-2">
-                                {categoryScoped ? (
-                                  <MenuItemPriceInputs
-                                    variants={variants}
-                                    singlePrice={editDraft.price}
-                                    variantPrices={editDraft.variantPrices}
-                                    onSinglePriceChange={(value) =>
-                                      setEditDraft((d) => ({ ...d, price: value }))
-                                    }
-                                    onVariantPriceChange={(variantId, value) =>
-                                      setEditDraft((d) => ({
-                                        ...d,
-                                        variantPrices: { ...d.variantPrices, [variantId]: value },
-                                      }))
-                                    }
-                                  />
-                                ) : (
-                                  <ItemPriceVariantsEditor
-                                    options={editDraft.productOptions}
-                                    singlePrice={editDraft.price}
-                                    onOptionsChange={(productOptions) =>
-                                      setEditDraft((d) => ({ ...d, productOptions }))
-                                    }
-                                    onSinglePriceChange={(value) =>
-                                      setEditDraft((d) => ({ ...d, price: value }))
-                                    }
-                                  />
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => void saveEditItem(category)}
-                                  className="rounded-lg bg-brand px-3 py-1 text-xs font-semibold text-white"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingItemId(null)}
-                                  className="rounded-lg border border-line px-3 py-1 text-xs font-semibold"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-3">
-                              <MenuItemImageCarousel
-                                imageUrls={item.imageUrls}
-                                imageUrl={item.imageUrl}
-                                alt={item.name}
-                                placeholder={imagePlaceholder}
-                                size="sm"
+                            ) : (
+                              <ItemPriceVariantsEditor
+                                options={draft.productOptions}
+                                singlePrice={draft.price}
+                                onOptionsChange={(productOptions) =>
+                                  setItemDrafts((prev) => ({
+                                    ...prev,
+                                    [category.id]: { ...draft, productOptions },
+                                  }))
+                                }
+                                onSinglePriceChange={(value) =>
+                                  setItemDrafts((prev) => ({
+                                    ...prev,
+                                    [category.id]: { ...draft, price: value },
+                                  }))
+                                }
                               />
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold leading-snug">
-                                  {copy.showVegBadge ? (
-                                    <span
-                                      className={`mr-1.5 inline-block h-2.5 w-2.5 rounded-sm border ${
-                                        item.isNonVeg
-                                          ? 'border-red-700 bg-red-600'
-                                          : 'border-green-700 bg-green-600'
-                                      }`}
-                                      title={item.isNonVeg ? 'Non-veg' : 'Veg'}
-                                    />
-                                  ) : null}
-                                  {item.name}
-                                </p>
-                                <p className="text-muted" title={formatMenuItemPriceDetail(item, itemVariants)}>
-                                  {formatMenuItemPrice(item)}
-                                </p>
-                                <label className="mt-1 flex items-center gap-2 text-[11px] text-muted">
-                                  <input
-                                    type="checkbox"
-                                    checked={item.isAvailable}
-                                    onChange={(e) => void toggleItemAvailable(item, e.target.checked)}
-                                  />
-                                  On menu
-                                </label>
-                              </div>
-                              <span className="flex shrink-0 gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => startEditItem(item, category, categoryScoped ?? false)}
-                                  className="rounded-lg border border-line px-2 py-1 text-xs font-semibold"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void removeItem(item.id)}
-                                  className="text-muted hover:text-red-700"
-                                  aria-label="Remove item"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </span>
-                            </div>
-                          )}
-                        </li>
-                        );
-                      })}
-                    </ul>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <input
-                        placeholder={copy.itemLabel}
-                        className="min-w-[8rem] flex-1 rounded-xl border border-line px-3 py-2 text-sm"
-                        value={draft.name}
-                        onChange={(e) =>
-                          setItemDrafts((prev) => ({
-                            ...prev,
-                            [category.id]: { ...draft, name: e.target.value },
-                          }))
-                        }
-                      />
-                      {categoryScoped ? (
-                        <MenuItemPriceInputs
-                          variants={variants}
-                          singlePrice={draft.price}
-                          variantPrices={draft.variantPrices}
-                          onSinglePriceChange={(value) =>
-                            setItemDrafts((prev) => ({
-                              ...prev,
-                              [category.id]: { ...draft, price: value },
-                            }))
-                          }
-                          onVariantPriceChange={(variantId, value) =>
-                            setItemDrafts((prev) => ({
-                              ...prev,
-                              [category.id]: {
-                                ...draft,
-                                variantPrices: { ...draft.variantPrices, [variantId]: value },
-                              },
-                            }))
-                          }
-                        />
-                      ) : (
-                        <ItemPriceVariantsEditor
-                          options={draft.productOptions}
-                          singlePrice={draft.price}
-                          onOptionsChange={(productOptions) =>
-                            setItemDrafts((prev) => ({
-                              ...prev,
-                              [category.id]: { ...draft, productOptions },
-                            }))
-                          }
-                          onSinglePriceChange={(value) =>
-                            setItemDrafts((prev) => ({
-                              ...prev,
-                              [category.id]: { ...draft, price: value },
-                            }))
-                          }
-                        />
-                      )}
-                      {copy.showVegBadge ? (
-                        <label className="flex items-center gap-1 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={draft.isNonVeg}
-                            onChange={(e) =>
-                              setItemDrafts((prev) => ({
-                                ...prev,
-                                [category.id]: { ...draft, isNonVeg: e.target.checked },
-                              }))
-                            }
-                          />
-                          Non-veg
-                        </label>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => void addItem(category.id)}
-                        className="rounded-xl border border-line px-3 py-2 text-sm font-semibold"
-                      >
-                        {copy.addItem}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                            )}
+                            {copy.showVegBadge ? (
+                              <label className="flex items-center gap-1 text-xs">
+                                <input
+                                  type="checkbox"
+                                  checked={draft.isNonVeg}
+                                  onChange={(e) =>
+                                    setItemDrafts((prev) => ({
+                                      ...prev,
+                                      [category.id]: { ...draft, isNonVeg: e.target.checked },
+                                    }))
+                                  }
+                                />
+                                Non-veg
+                              </label>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void addItem(category.id)}
+                              className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold"
+                            >
+                              {copy.addItem}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : null}
                 </div>
-              )}
-              </>
               ) : null}
             </div>
 
-            <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <div className="lg:sticky lg:top-6 lg:self-start">
               <MenuGuestPreview
                 locationName={selected.name}
+                locationSubtitle={selected.businessName}
                 copy={copy}
                 categories={hub.categories}
                 imagePlaceholder={imagePlaceholder}
                 locked={!unlocked}
                 priceVariantScope={hub.priceVariantScope}
+                activeCategoryId={selectedCategoryId}
+                featuredTabLabel={featuredTabLabel}
               />
-              <div className="rounded-2xl border border-line bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Public link & QR</p>
-                {unlocked ? (
-                  <div className="mt-3 flex justify-center rounded-xl bg-paper py-3">
-                    <QrCodePreview value={hub.publicUrl} size={120} label="Commerce catalogue QR" />
-                  </div>
-                ) : (
-                  <p className="mt-2 text-xs text-muted">Activate Quick Commerce to show your QR code.</p>
-                )}
-                <p className="mt-2 break-all font-mono text-xs">{hub.publicUrl}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={!unlocked}
-                    onClick={() => void copyLink()}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line px-3 text-xs font-semibold disabled:opacity-50"
-                  >
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    Copy
-                  </button>
-                  <a
-                    href={unlocked ? hub.publicPath : undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => {
-                      if (!unlocked) e.preventDefault();
-                    }}
-                    className={`inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold ${
-                      unlocked ? 'bg-brand text-white' : 'cursor-not-allowed bg-paper text-muted'
-                    }`}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Open
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
         </>

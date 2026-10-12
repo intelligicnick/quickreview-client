@@ -1,7 +1,7 @@
 export function BrandMark({ className = '' }: { className?: string }) {
   return (
     <img
-      src="/logo.png"
+      src="/logo-transparent.png"
       alt="QuickReview"
       width={1024}
       height={341}

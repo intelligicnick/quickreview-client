@@ -267,7 +267,7 @@ export function QuickReviewPage() {
                 rows={4}
                 value={questionsText}
                 onChange={(e) => setQuestionsText(e.target.value)}
-                placeholder={`What did you enjoy most about your visit?\nWas there anything that stood out?\nWho would you recommend us to?`}
+                placeholder={`What did you enjoy most about your visit?\nWas there anything that stood out? (optional)\nWho would you recommend us to? (optional)`}
               />
               <p className="mt-4 font-bold">AI keywords (optional)</p>
               <p className="mt-1 text-sm text-muted">

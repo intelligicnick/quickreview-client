@@ -12,6 +12,9 @@ function previewAspect(product: ProductLike): string {
   if (name.includes('nfc') || name.includes('card') || dims.includes('mm') || dims.includes('cr80')) {
     return 'aspect-[856/540]';
   }
+  if (name.includes('tent') || dims.includes('5×7') || dims.includes('5x7')) {
+    return 'aspect-[5/7]';
+  }
   if (name.includes('standee') || dims.includes('6')) {
     return 'aspect-[2/3]';
   }

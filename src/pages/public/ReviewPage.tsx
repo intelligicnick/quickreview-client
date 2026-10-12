@@ -43,14 +43,14 @@ const GENERATING_MESSAGES = [
 
 const DEFAULT_REVIEW_QUESTIONS = [
   'What did you enjoy most about your visit?',
-  'Was there anything that stood out? (staff, ambiance, service…)',
-  'Who would you recommend us to?',
+  'Was there anything that stood out? (optional)',
+  'Who would you recommend us to? (optional)',
 ];
 
 const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
-  ['Friendly staff', 'Great food', 'Ambience'],
-  ['Fast service', 'Clean place', 'Good value'],
-  ['Friends & family', 'Date night', 'Food lovers'],
+  ['Friendly staff', 'Great quality', 'Welcoming atmosphere'],
+  ['Fast service', 'Clean & tidy', 'Good value'],
+  ['Friends & family', 'Colleagues', 'Anyone nearby'],
 ];
 
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';

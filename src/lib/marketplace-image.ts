@@ -1,22 +1,34 @@
-const STANDEE_REVIEW = '/marketplace/standee-review-qr.png';
-const STANDEE_MENU = '/marketplace/standee-menu-qr.png';
+const STANDEE_REVIEW = '/marketplace/standee-review-4x6.svg';
+const STANDEE_MENU = '/marketplace/standee-menu-4x6.svg';
+const TENT_MENU_5X7 = '/marketplace/tent-menu-5x7.svg';
 const NFC_CARD = '/marketplace/nfc-review-card.svg';
 
 const DEFAULT_BY_NAME: Record<string, string> = {
   'Acrylic standee — Review QR': STANDEE_REVIEW,
   'Acrylic standee — Menu QR': STANDEE_MENU,
+  'Menu table tent — QuickCommerce': TENT_MENU_5X7,
   'NFC review card': NFC_CARD,
 };
 
 const LEGACY_IMAGE_UPGRADES: Record<string, string> = {
   '/marketplace/standee-review-qr.svg': STANDEE_REVIEW,
   '/marketplace/standee-menu-qr.svg': STANDEE_MENU,
+  '/marketplace/standee-review-qr.png': STANDEE_REVIEW,
+  '/marketplace/standee-menu-qr.png': STANDEE_MENU,
 };
 
 function defaultImageByProductName(name: string): string | undefined {
   const exact = DEFAULT_BY_NAME[name];
   if (exact) return exact;
   const lower = name.toLowerCase();
+  if (
+    lower.includes('tent') ||
+    lower.includes('5×7') ||
+    lower.includes('5x7') ||
+    (lower.includes('quickcommerce') && lower.includes('menu'))
+  ) {
+    return TENT_MENU_5X7;
+  }
   if (lower.includes('menu') && lower.includes('qr')) return STANDEE_MENU;
   if (lower.includes('nfc') || (lower.includes('card') && lower.includes('review'))) return NFC_CARD;
   if (lower.includes('standee') || (lower.includes('review') && lower.includes('qr'))) return STANDEE_REVIEW;
@@ -51,6 +63,7 @@ export function marketplaceImageSrc(
 export function marketplaceDimensionBadge(dimensions: string | null | undefined): string | null {
   if (!dimensions?.trim()) return null;
   const d = dimensions.toLowerCase();
+  if (d.includes('5×7') || d.includes('5x7')) return '5×7 Inches';
   if (d.includes('4×6') || d.includes('4x6')) return '4×6 Inches';
   if (d.includes('85.6') || d.includes('cr80') || d.includes('54 mm')) return 'CR80';
   return dimensions.split('(')[0]?.trim() || dimensions;
