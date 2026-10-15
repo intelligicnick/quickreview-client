@@ -8,12 +8,16 @@ export function RateCard({
   showBack = false,
   fill = false,
   alignTop = false,
+  compact = false,
+  hideFooter = false,
 }: {
   children: ReactNode;
   onBack?: () => void;
   showBack?: boolean;
   fill?: boolean;
   alignTop?: boolean;
+  compact?: boolean;
+  hideFooter?: boolean;
 }) {
   return (
     <div
@@ -23,7 +27,13 @@ export function RateCard({
           : 'min-h-dvh sm:min-h-0'
       }`}
     >
-      <div className="relative flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6">
+      <div
+        className={`relative flex shrink-0 items-center justify-between gap-3 sm:px-6 sm:pt-6 ${
+          compact
+            ? 'px-4 pb-1 pt-[max(0.5rem,env(safe-area-inset-top))] sm:pb-1'
+            : 'px-5 pb-2 pt-[max(1.25rem,env(safe-area-inset-top))]'
+        }`}
+      >
         <div className="flex min-w-0 items-center gap-1">
           {showBack && onBack ? (
             <button
@@ -35,7 +45,7 @@ export function RateCard({
               <ArrowLeft className="h-5 w-5" />
             </button>
           ) : null}
-          <BrandMark className="!h-8 max-w-[9rem]" />
+          <BrandMark className={compact ? '!h-6 max-w-[7rem]' : '!h-8 max-w-[9rem]'} />
         </div>
         <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-brand-dark sm:px-2.5 sm:py-1 sm:text-[11px]">
           <span className="max-[380px]:hidden">Verified Feedback</span>
@@ -44,17 +54,19 @@ export function RateCard({
       </div>
 
       <div
-        className={`flex flex-1 flex-col px-5 py-6 sm:px-6 sm:pb-7 sm:pt-4 ${
-          fill || alignTop ? 'min-h-0 justify-start' : 'justify-center'
-        }`}
+        className={`flex flex-1 flex-col sm:px-6 sm:pt-4 ${
+          compact ? 'min-h-0 justify-start px-4 py-2 sm:pb-4' : 'px-5 py-6 sm:pb-7'
+        } ${fill || alignTop ? 'min-h-0 justify-start' : compact ? '' : 'justify-center'}`}
       >
         {fill ? <div className="flex min-h-0 flex-1 flex-col">{children}</div> : children}
       </div>
 
-      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-line px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
-        <span className="text-[10px] font-semibold tracking-[0.14em] text-muted">POWERED BY</span>
-        <BrandMark className="opacity-80 !h-5 max-w-[6rem]" />
-      </div>
+      {hideFooter ? null : (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-t border-line px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+          <span className="text-[10px] font-semibold tracking-[0.14em] text-muted">POWERED BY</span>
+          <BrandMark className="opacity-80 !h-5 max-w-[6rem]" />
+        </div>
+      )}
     </div>
   );
 }

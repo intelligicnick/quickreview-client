@@ -56,24 +56,26 @@ const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
 
 function fallbackDrafts(name: string, stars: number, highlight?: string): string[] {
-  const bit = highlight?.trim() || 'great service';
-  const drafts = [
-    `Had a ${stars}-star experience at ${name}. ${bit}. Would recommend to friends and family.`,
-    `${name} exceeded my expectations — ${bit}. Friendly team and great service.`,
-    `Really pleased with my visit to ${name}. ${bit}. Professional and worth every rupee.`,
-    `Worth stopping by ${name} — ${bit}. I'll be back.`,
+  const phrases = (highlight ?? '')
+    .split(/[,;]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 2);
+  const a = phrases[0] ?? 'great service';
+  const b = phrases[1] ?? a;
+  return [
+    `${stars} stars at ${name} — ${a} really made the difference for me.`,
+    `I'd recommend ${name}; ${b.toLowerCase()} was handled better than I expected.`,
   ];
-  for (let i = drafts.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [drafts[i], drafts[j]] = [drafts[j], drafts[i]];
-  }
-  return drafts;
 }
 
 function buildDraftAnswers(questions: string[], answers: string[]): DraftAnswer[] {
   return questions
     .map((question, index) => ({ question, answer: answers[index]?.trim() ?? '' }))
     .filter((row) => row.answer.length >= 2);
+}
+
+function questionShowsOptionalSuffix(question: string): boolean {
+  return !/\(optional\)/i.test(question);
 }
 
 export function ReviewPage() {
@@ -171,15 +173,16 @@ export function ReviewPage() {
         `/api/public/r/${encodeURIComponent(code)}/suggestions`,
         { method: 'POST', auth: false, body: { stars: starRating, answers } },
       );
-      const list = data.suggestions.length
-        ? data.suggestions
-        : fallbackDrafts(shop.name, starRating, answers[0]?.answer);
+      const list = (data.suggestions.length ? data.suggestions : fallbackDrafts(shop.name, starRating, answers[0]?.answer)).slice(
+        0,
+        2,
+      );
       setDraftVersions(list);
       setStep('draft');
     } catch (err) {
       const fallback = fallbackDrafts(shop.name, starRating, answers[0]?.answer);
       setDraftError(err instanceof Error ? err.message : 'Could not generate your review.');
-      setDraftVersions(fallback);
+      setDraftVersions(fallback.slice(0, 2));
       setStep('draft');
     }
   }
@@ -295,6 +298,8 @@ export function ReviewPage() {
     : selected
       ? RATING_OPTIONS[selected]
       : null;
+  const expandedRateStep = step === 'rate' && selected > 0;
+  const questionsOpen = expandedRateStep && selected >= 4;
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-white sm:bg-transparent">
@@ -333,73 +338,142 @@ export function ReviewPage() {
             </RateCard>
           </div>
         ) : shop && step === 'rate' ? (
-          <div className="animate-fade-up w-full sm:w-auto">
-            <RateCard alignTop={selected > 0}>
+          <div
+            className={`animate-fade-up w-full sm:w-auto ${
+              expandedRateStep ? 'flex h-dvh min-h-0 flex-col' : ''
+            }`}
+          >
+            <RateCard
+              alignTop={expandedRateStep}
+              fill={expandedRateStep}
+              compact={expandedRateStep}
+              hideFooter={expandedRateStep}
+            >
               <div className="text-center">
-                <h1 className="font-display text-[1.65rem] font-bold leading-tight tracking-tight text-ink sm:text-[1.85rem]">
+                <h1
+                  className={`font-display font-bold leading-tight tracking-tight text-ink ${
+                    questionsOpen
+                      ? 'text-lg sm:text-xl'
+                      : 'text-[1.65rem] sm:text-[1.85rem]'
+                  }`}
+                >
                   {shop.name}
                 </h1>
-                {shop.address ? (
+                {!questionsOpen && shop.address ? (
                   <p className="mt-2 text-[15px] leading-relaxed text-muted">{shop.address}</p>
-                ) : (
+                ) : !questionsOpen ? (
                   <p className="mt-3 text-[15px] leading-relaxed text-muted">
                     How was your experience with us today?
                   </p>
-                )}
-
-                <div
-                  className="mt-8 flex items-center justify-center gap-1.5 sm:gap-2"
-                  onMouseLeave={() => setHovered(0)}
-                  role="radiogroup"
-                  aria-label="Star rating"
-                >
-                  {[1, 2, 3, 4, 5].map((value) => {
-                    const filled = value <= activeRating;
-                    const option = RATING_OPTIONS[value];
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected === value}
-                        aria-label={`${value} stars — ${option.label}`}
-                        className="rounded-xl p-1 transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                        onMouseEnter={() => setHovered(value)}
-                        onFocus={() => setHovered(value)}
-                        onBlur={() => setHovered(0)}
-                        onClick={() => handleSelectRating(value)}
-                      >
-                        <Star
-                          className={`h-11 w-11 transition-all sm:h-12 sm:w-12 ${
-                            filled
-                              ? 'fill-gold text-gold drop-shadow-[0_0_10px_rgba(245,180,0,0.55)]'
-                              : 'fill-transparent text-slate-300'
-                          }`}
-                          strokeWidth={1.5}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-5 flex min-h-9 items-center justify-center" aria-live="polite">
-                  {previewOption ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1.5 text-sm font-semibold text-amber-800">
-                      {previewOption.label}{' '}
-                      <span aria-hidden className="text-base leading-none">{previewOption.emoji}</span>
-                    </span>
-                  ) : null}
-                </div>
-
-                {!selected ? (
-                  <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                    Tap a star to share your review
-                  </p>
                 ) : null}
+
+                {questionsOpen ? (
+                  <div
+                    className="mt-2 flex items-center justify-center gap-2"
+                    onMouseLeave={() => setHovered(0)}
+                    role="radiogroup"
+                    aria-label="Star rating"
+                  >
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((value) => {
+                        const filled = value <= activeRating;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected === value}
+                            aria-label={`${value} stars — ${RATING_OPTIONS[value].label}`}
+                            className="rounded-lg p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
+                            onMouseEnter={() => setHovered(value)}
+                            onFocus={() => setHovered(value)}
+                            onBlur={() => setHovered(0)}
+                            onClick={() => handleSelectRating(value)}
+                          >
+                            <Star
+                              className={`h-6 w-6 ${
+                                filled
+                                  ? 'fill-gold text-gold'
+                                  : 'fill-transparent text-slate-300'
+                              }`}
+                              strokeWidth={1.5}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {previewOption ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800"
+                        aria-live="polite"
+                      >
+                        {previewOption.label}
+                        <span aria-hidden className="leading-none">{previewOption.emoji}</span>
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      className="mt-8 flex items-center justify-center gap-1.5 sm:gap-2"
+                      onMouseLeave={() => setHovered(0)}
+                      role="radiogroup"
+                      aria-label="Star rating"
+                    >
+                      {[1, 2, 3, 4, 5].map((value) => {
+                        const filled = value <= activeRating;
+                        const option = RATING_OPTIONS[value];
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected === value}
+                            aria-label={`${value} stars — ${option.label}`}
+                            className="rounded-xl p-1 transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                            onMouseEnter={() => setHovered(value)}
+                            onFocus={() => setHovered(value)}
+                            onBlur={() => setHovered(0)}
+                            onClick={() => handleSelectRating(value)}
+                          >
+                            <Star
+                              className={`h-11 w-11 transition-all sm:h-12 sm:w-12 ${
+                                filled
+                                  ? 'fill-gold text-gold drop-shadow-[0_0_10px_rgba(245,180,0,0.55)]'
+                                  : 'fill-transparent text-slate-300'
+                              }`}
+                              strokeWidth={1.5}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-5 flex min-h-9 items-center justify-center" aria-live="polite">
+                      {previewOption ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1.5 text-sm font-semibold text-amber-800">
+                          {previewOption.label}{' '}
+                          <span aria-hidden className="text-base leading-none">{previewOption.emoji}</span>
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {!selected ? (
+                      <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                        Tap a star to share your review
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </div>
 
               {selected >= 1 && selected <= 3 ? (
-                <form className="mt-8 border-t border-line pt-6" onSubmit={(e) => void handleSubmitPrivateFeedback(e)}>
+                <form
+                  className={`border-t border-line ${
+                    expandedRateStep ? 'mt-3 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'mt-8 pt-6'
+                  }`}
+                  onSubmit={(e) => void handleSubmitPrivateFeedback(e)}
+                >
                   <div className="text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand">
                       <MessageSquareLock className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -435,24 +509,22 @@ export function ReviewPage() {
               ) : null}
 
               {selected >= 4 ? (
-                <form className="mt-8 border-t border-line pt-6 space-y-4" onSubmit={(e) => void handleSubmitQuestions(e)}>
-                  <div className="text-center">
-                    <h2 className="font-display text-lg font-bold tracking-tight text-ink">
-                      A few quick questions
-                    </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">
-                      We&apos;ll frame a Google review on the next screen — pick one and copy.
-                    </p>
-                  </div>
+                <form
+                  className="mt-3 border-t border-line pt-3 space-y-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+                  onSubmit={(e) => void handleSubmitQuestions(e)}
+                >
+                  <h2 className="text-center font-display text-base font-bold tracking-tight text-ink">
+                    A few quick questions
+                  </h2>
                   {activeQuestions.map((question, index) => (
                     <div key={index}>
-                      <label className="block text-sm font-semibold text-ink" htmlFor={`review-q-${index}`}>
+                      <label className="block text-xs font-semibold text-ink" htmlFor={`review-q-${index}`}>
                         {question}
-                        {index === 0 ? null : (
+                        {index > 0 && questionShowsOptionalSuffix(question) ? (
                           <span className="font-normal text-muted"> (optional)</span>
-                        )}
+                        ) : null}
                       </label>
-                      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tap to select">
+                      <div className="mt-1 flex flex-wrap gap-1.5" role="group" aria-label="Tap to select">
                         {chipsForQuestion(index).map((option) => {
                           const chipSelected = isAnswerOptionSelected(
                             questionAnswers[index] ?? '',
@@ -463,7 +535,7 @@ export function ReviewPage() {
                               key={`${index}-${option}`}
                               type="button"
                               onClick={() => toggleAnswerOption(index, option)}
-                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                                 chipSelected
                                   ? 'border-brand bg-brand/10 text-brand'
                                   : 'border-line bg-white text-muted hover:border-brand hover:text-brand'
@@ -485,18 +557,18 @@ export function ReviewPage() {
                           setQuestionAnswers(next);
                           if (draftError) setDraftError(null);
                         }}
-                        className="mt-3 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                        className="mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-2 text-xs text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
                         placeholder={index === 0 ? 'Or type your own…' : 'Add more detail (optional)'}
                         required={index === 0 && !parsedAnswerOptions(questionAnswers[index] ?? '').length}
                       />
                     </div>
                   ))}
                   {draftError ? (
-                    <p className="text-sm text-red-600" role="alert">{draftError}</p>
+                    <p className="text-xs text-red-600" role="alert">{draftError}</p>
                   ) : null}
-                  <button type="submit" className="btn-gradient w-full">
+                  <button type="submit" className="btn-gradient w-full py-2.5 text-sm">
                     Frame my review
-                    <Sparkles className="ml-1.5 inline h-4 w-4" aria-hidden />
+                    <Sparkles className="ml-1.5 inline h-3.5 w-3.5" aria-hidden />
                   </button>
                 </form>
               ) : null}
