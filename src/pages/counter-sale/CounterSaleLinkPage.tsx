@@ -6,6 +6,7 @@ import {
   CounterSaleApiError,
   getCounterSaleToken,
 } from '../../lib/counter-sale-api';
+import { readQrFromVideo } from '../../lib/qr-from-video';
 
 type PlaceRow = {
   placeId: string;
@@ -49,6 +50,7 @@ function playScanSound(kind: 'success' | 'error') {
 export function CounterSaleLinkPage() {
   const token = getCounterSaleToken();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimer = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lookupBusy = useRef(false);
@@ -128,7 +130,7 @@ export function CounterSaleLinkPage() {
     setScanStarting(true);
     setScanError(null);
 
-    if (!('BarcodeDetector' in window)) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       setScanError('Camera scan is not supported on this browser. Enter the code manually.');
       setScanActive(false);
       setScanStarting(false);
@@ -138,6 +140,7 @@ export function CounterSaleLinkPage() {
     void (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
           video: { facingMode: { ideal: 'environment' } },
         });
         if (cancelled) {
@@ -151,20 +154,20 @@ export function CounterSaleLinkPage() {
           await video.play();
         }
         setScanStarting(false);
-        const detector = new BarcodeDetector({ formats: ['qr_code'] });
         scanTimer.current = window.setInterval(() => {
           void (async () => {
-            if (!videoRef.current || videoRef.current.readyState < 2) return;
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            if (!video || !canvas || video.readyState < 2) return;
             try {
-              const codes = await detector.detect(videoRef.current);
-              const raw = codes[0]?.rawValue;
+              const raw = await readQrFromVideo(video, canvas);
               if (!raw) return;
               await handleScannedRaw(raw);
             } catch {
               /* keep scanning */
             }
           })();
-        }, 400);
+        }, 300);
       } catch {
         if (!cancelled) {
           setScanError('Allow camera access or type the QR code below.');
@@ -283,6 +286,7 @@ export function CounterSaleLinkPage() {
             <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-white/90">
               Point at the standee QR code
             </p>
+            <canvas ref={canvasRef} className="hidden" aria-hidden />
           </div>
         ) : null}
         {qrScanHint ? (
