@@ -75,7 +75,7 @@ export function QrProductCard({
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            unlocked ? 'bg-brand/10 text-brand-dark' : 'bg-violet-50 text-violet-800'
+            unlocked ? 'bg-brand/10 text-brand-dark' : 'bg-paper text-muted'
           }`}
         >
           {statusLabel}

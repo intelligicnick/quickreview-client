@@ -5,7 +5,6 @@ import {
   Copy,
   Download,
   ExternalLink,
-  LineChart,
   MapPin,
   Plus,
   Printer,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import { LockedQrGate } from '../components/LockedQrGate';
 import { QrCodePreview } from '../components/QrCodePreview';
+import { ReviewGrowthCard, type ReviewGrowthData } from '../components/review/ReviewGrowthCard';
 import { ReviewGuestPreview } from '../components/review/ReviewGuestPreview';
 import { api, ApiError } from '../lib/api';
 import { useLocationContext } from '../lib/location-context';
@@ -146,6 +146,8 @@ export function QuickReviewPage() {
   const [reviewTone, setReviewTone] = useState<ReviewTone>('friendly');
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
   const [statsRange, setStatsRange] = useState<'7' | '30' | '90' | 'all'>('30');
+  const [reviewGrowth, setReviewGrowth] = useState<ReviewGrowthData | null>(null);
+  const [reviewGrowthError, setReviewGrowthError] = useState<string | null>(null);
   const [inboxFilter, setInboxFilter] = useState<InboxFilter>('open');
   const [linkCopied, setLinkCopied] = useState(false);
   const qrWrapRef = useRef<HTMLDivElement>(null);
@@ -181,6 +183,34 @@ export function QuickReviewPage() {
       cancelled = true;
     };
   }, [selected]);
+
+  useEffect(() => {
+    if (!selected || tab !== 'stats') {
+      setReviewGrowth(null);
+      setReviewGrowthError(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const growth = await api<ReviewGrowthData>(
+          `/api/locations/${selected.id}/quickreview/review-growth?range=${statsRange}`,
+        );
+        if (!cancelled) {
+          setReviewGrowth(growth);
+          setReviewGrowthError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setReviewGrowth(null);
+          setReviewGrowthError(err instanceof ApiError ? err.message : 'Could not load review growth');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, tab, statsRange]);
 
   const filteredInbox = inboxForFilter(inbox, inboxFilter);
 
@@ -522,11 +552,10 @@ export function QuickReviewPage() {
                 </ul>
               </article>
 
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-white px-6 py-14 text-center">
-                <LineChart className="h-8 w-8 text-muted" aria-hidden />
-                <p className="mt-3 text-sm font-semibold text-ink">Daily trend</p>
-                <p className="mt-1 text-sm text-muted">Appears once you have 7 days of activity.</p>
-              </div>
+              {reviewGrowthError ? (
+                <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{reviewGrowthError}</p>
+              ) : null}
+              {reviewGrowth ? <ReviewGrowthCard data={reviewGrowth} /> : null}
             </div>
           ) : null}
 

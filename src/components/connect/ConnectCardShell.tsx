@@ -106,11 +106,11 @@ export function ConnectCardShell({
           <section className="mt-3 flex shrink-0 gap-2 px-4">
             {isPreview ? (
               <>
-                <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-700 px-3 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(107,47,213,0.28)]">
+                <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-[#2f7bff] to-brand-dark px-3 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(26,109,255,0.28)]">
                   <UserPlus className="h-3.5 w-3.5" aria-hidden />
                   Save contact
                 </span>
-                <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-[13px] font-semibold text-violet-700">
+                <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand/30 bg-brand/10 px-3 py-2.5 text-[13px] font-semibold text-brand-dark">
                   <UserRoundPlus className="h-3.5 w-3.5" aria-hidden />
                   Exchange
                 </span>
@@ -120,7 +120,7 @@ export function ConnectCardShell({
                 <button
                   type="button"
                   onClick={onSaveContact}
-                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border-0 bg-gradient-to-b from-violet-500 to-violet-700 px-3 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(107,47,213,0.28)]"
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border-0 bg-gradient-to-b from-[#2f7bff] to-brand-dark px-3 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(26,109,255,0.28)]"
                 >
                   <UserPlus className="h-3.5 w-3.5" aria-hidden />
                   Save contact
@@ -128,7 +128,7 @@ export function ConnectCardShell({
                 <button
                   type="button"
                   onClick={onExchange}
-                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-[13px] font-semibold text-violet-700"
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-brand/30 bg-brand/10 px-3 py-2.5 text-[13px] font-semibold text-brand-dark"
                 >
                   <UserRoundPlus className="h-3.5 w-3.5" aria-hidden />
                   Exchange

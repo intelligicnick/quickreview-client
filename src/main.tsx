@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './lib/auth';
 import './index.css';
+import { registerCounterSalePwa } from './pwa-register';
+
+registerCounterSalePwa();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

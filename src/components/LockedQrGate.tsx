@@ -23,7 +23,7 @@ export function LockedQrGate({
   className = '',
 }: LockedQrGateProps) {
   const pillClass =
-    'max-w-[min(100%,20rem)] rounded-full bg-violet-600 px-5 py-3 text-center text-sm font-semibold leading-snug text-white shadow-[0_8px_24px_rgba(124,58,237,0.35)] transition-colors hover:bg-violet-700';
+    'max-w-[min(100%,20rem)] rounded-full bg-brand px-5 py-3 text-center text-sm font-semibold leading-snug text-white shadow-[0_8px_24px_rgba(26,109,255,0.35)] transition-colors hover:bg-brand-dark';
   return (
     <div
       className={`relative overflow-hidden rounded-2xl border border-line bg-white ${className}`}

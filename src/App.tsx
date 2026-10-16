@@ -15,6 +15,7 @@ import { AdminQrBatchesPage } from './pages/admin/AdminQrBatchesPage';
 import { AdminActivityPage } from './pages/admin/AdminActivityPage';
 import { AdminSubscriptionsPage } from './pages/admin/AdminSubscriptionsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminCounterSalePage } from './pages/admin/AdminCounterSalePage';
 import { BusinessDetailPage } from './pages/BusinessDetailPage';
 import { BusinessesPage } from './pages/BusinessesPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -65,6 +66,10 @@ import { RequireCrmOnboarding } from './pages/crm/RequireCrmOnboarding';
 import { LandingPage } from './pages/LandingPage';
 import { GuidesPage } from './pages/GuidesPage';
 import { GuideArticlePage } from './pages/GuideArticlePage';
+import { CounterSaleShell } from './pages/counter-sale/CounterSaleShell';
+import { CounterSaleHomePage } from './pages/counter-sale/CounterSaleHomePage';
+import { CounterSaleLoginPage } from './pages/counter-sale/CounterSaleLoginPage';
+import { CounterSaleLinkPage } from './pages/counter-sale/CounterSaleLinkPage';
 
 function GuestOnly({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
@@ -137,6 +142,11 @@ export default function App() {
       <Route path="/go/:slug" element={<MenuPage />} />
       <Route path="/menu/:slug" element={<MenuPage />} />
       <Route path="/quick-revisit/:code" element={<PublicQuickRevisitPage />} />
+      <Route path="/counter-sale" element={<CounterSaleShell />}>
+        <Route index element={<CounterSaleHomePage />} />
+        <Route path="login" element={<CounterSaleLoginPage />} />
+        <Route path="link" element={<CounterSaleLinkPage />} />
+      </Route>
       <Route
         path="/app"
         element={
@@ -205,6 +215,7 @@ export default function App() {
         <Route path="users" element={<Navigate to="/admin/merchants" replace />} />
         <Route path="users/:userId" element={<AdminMerchantRedirect />} />
         <Route path="locations" element={<AdminLocationsPage />} />
+        <Route path="counter-sale" element={<AdminCounterSalePage />} />
         <Route path="payments" element={<AdminSubscriptionsPage />} />
         <Route path="subscriptions" element={<Navigate to="/admin/payments" replace />} />
         <Route path="qr" element={<AdminQrBatchesPage />} />
