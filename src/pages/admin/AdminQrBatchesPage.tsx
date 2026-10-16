@@ -21,7 +21,7 @@ type QrRow = {
   createdAt: string;
 };
 
-type Filter = 'all' | 'unassigned' | 'not_printed' | 'assigned' | 'printed';
+type Filter = 'all' | 'unassigned' | 'not_printed' | 'assigned' | 'printed' | 'merchant_side';
 
 export function AdminQrBatchesPage() {
   const [rows, setRows] = useState<QrRow[]>([]);
@@ -32,14 +32,18 @@ export function AdminQrBatchesPage() {
   const [busy, setBusy] = useState(false);
   const [assign, setAssign] = useState({ codeId: '', locationId: '', kind: 'review' as 'review' | 'menu' });
 
-  async function loadAll() {
-    const data = await api<QrRow[]>('/api/admin/qr-codes');
+  async function loadAll(merchantDigital = false) {
+    const path = merchantDigital ? '/api/admin/qr-codes?merchantDigital=true' : '/api/admin/qr-codes';
+    const data = await api<QrRow[]>(path);
     setRows(data);
   }
 
   useEffect(() => {
-    void loadAll().catch((err) => setError(err instanceof ApiError ? err.message : 'Could not load QR codes'));
-  }, []);
+    const merchantDigital = filter === 'merchant_side';
+    void loadAll(merchantDigital).catch((err) =>
+      setError(err instanceof ApiError ? err.message : 'Could not load QR codes'),
+    );
+  }, [filter]);
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
@@ -47,6 +51,7 @@ export function AdminQrBatchesPage() {
       if (filter === 'not_printed') return !row.isPrinted;
       if (filter === 'assigned') return Boolean(row.locationId);
       if (filter === 'printed') return row.isPrinted && !row.locationId;
+      if (filter === 'merchant_side') return true;
       return true;
     });
   }, [rows, filter]);
@@ -67,7 +72,7 @@ export function AdminQrBatchesPage() {
         body: { size: batchSize },
       });
       setLastBatch(created.batchId);
-      await loadAll();
+      await loadAll(filter === 'merchant_side');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create batch');
     } finally {
@@ -85,7 +90,7 @@ export function AdminQrBatchesPage() {
         body: { locationId: assign.locationId, kind: assign.kind },
       });
       setAssign({ codeId: '', locationId: '', kind: 'review' });
-      await loadAll();
+      await loadAll(filter === 'merchant_side');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not assign code');
     } finally {
@@ -101,7 +106,7 @@ export function AdminQrBatchesPage() {
       for (const row of targets.slice(0, 40)) {
         await api(`/api/admin/qr-codes/${row.id}/printed`, { method: 'PATCH', body: { isPrinted: printed } });
       }
-      await loadAll();
+      await loadAll(filter === 'merchant_side');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Bulk update failed');
     } finally {
@@ -228,6 +233,7 @@ export function AdminQrBatchesPage() {
             ['not_printed', 'Not printed'],
             ['printed', 'Printed'],
             ['assigned', 'Assigned'],
+            ['merchant_side', 'Merchant-side QR'],
           ] as const
         ).map(([id, label]) => (
           <button

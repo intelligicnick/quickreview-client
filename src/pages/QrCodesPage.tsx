@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { QrCode } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
+import { QrCodePreview } from '../components/QrCodePreview';
 import { QrProductCard } from '../components/QrProductCard';
 import { api, ApiError } from '../lib/api';
 import { loadWorkspaceSnapshot, productStatusLabel } from '../lib/location-workspace';
@@ -14,18 +15,33 @@ export function QrCodesPage() {
   const [standeeCode, setStandeeCode] = useState('');
   const [standeeKind, setStandeeKind] = useState<'review' | 'menu' | 'revisit'>('review');
   const [standeeMsg, setStandeeMsg] = useState<string | null>(null);
+  const [locationQrs, setLocationQrs] = useState<
+    { code: string; claimUrl: string; targetUrl: string | null; isMerchantDigital: boolean }[]
+  >([]);
 
   useEffect(() => {
     if (!selected) {
       setSnapshot(null);
+      setLocationQrs([]);
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const data = await loadWorkspaceSnapshot(selected.id);
+        const [data, qrs] = await Promise.all([
+          loadWorkspaceSnapshot(selected.id),
+          api<
+            {
+              code: string;
+              claimUrl: string;
+              targetUrl: string | null;
+              isMerchantDigital: boolean;
+            }[]
+          >(`/api/locations/${selected.id}/qr-codes`),
+        ]);
         if (!cancelled) {
           setSnapshot(data);
+          setLocationQrs(qrs);
           setError(null);
         }
       } catch (err) {
@@ -46,6 +62,10 @@ export function QrCodesPage() {
       );
       setStandeeMsg(`Linked ${result.code} — scans now route to your ${standeeKind === 'revisit' ? 'Quick Revisit' : standeeKind} page`);
       setStandeeCode('');
+      const qrs = await api<
+        { code: string; claimUrl: string; targetUrl: string | null; isMerchantDigital: boolean }[]
+      >(`/api/locations/${selected.id}/qr-codes`);
+      setLocationQrs(qrs);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not link standee');
     }
@@ -54,6 +74,7 @@ export function QrCodesPage() {
   const review = snapshot?.review;
   const menu = snapshot?.menu;
   const connect = snapshot?.connect;
+  const merchantDigital = locationQrs.find((row) => row.isMerchantDigital);
 
   return (
     <div>
@@ -132,6 +153,27 @@ export function QrCodesPage() {
               />
             ) : null}
           </div>
+
+          {merchantDigital ? (
+            <div className="mt-8 rounded-2xl border border-line bg-white p-5">
+              <p className="font-bold">Your QuickReview QR</p>
+              <p className="mt-1 text-sm text-muted">
+                Created when you activated QuickReview. Scans go to your review page via{' '}
+                <span className="font-mono text-xs">/q/{merchantDigital.code}</span>.
+              </p>
+              <div className="mt-4 flex flex-wrap items-start gap-4">
+                <QrCodePreview
+                  value={merchantDigital.targetUrl ?? merchantDigital.claimUrl}
+                  size={120}
+                  label={`QR ${merchantDigital.code}`}
+                />
+                <div className="min-w-0 text-sm">
+                  <p className="font-mono font-semibold">{merchantDigital.code}</p>
+                  <p className="mt-1 break-all text-muted">{merchantDigital.claimUrl}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-8 rounded-2xl border border-line bg-white p-5">
             <p className="font-bold">Link physical standee</p>

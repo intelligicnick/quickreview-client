@@ -15,9 +15,14 @@ type Props = {
 
 export function LocationPicker({ value, onChange, placeholder = 'Search merchant or location' }: Props) {
   const [query, setQuery] = useState('');
+  const [picked, setPicked] = useState<PickRow | null>(null);
   const [rows, setRows] = useState<PickRow[]>([]);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!value) setPicked(null);
+  }, [value]);
 
   useEffect(() => {
     if (!open || query.trim().length < 2) {
@@ -38,7 +43,7 @@ export function LocationPicker({ value, onChange, placeholder = 'Search merchant
     return () => window.clearTimeout(handle);
   }, [query, open]);
 
-  const selected = rows.find((row) => row.id === value);
+  const selected = picked ?? rows.find((row) => row.id === value) ?? null;
 
   return (
     <div className="relative">
@@ -47,7 +52,10 @@ export function LocationPicker({ value, onChange, placeholder = 'Search merchant
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
-          if (!e.target.value.trim()) onChange('', null);
+          if (!e.target.value.trim()) {
+            onChange('', null);
+            setPicked(null);
+          }
         }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
@@ -63,6 +71,7 @@ export function LocationPicker({ value, onChange, placeholder = 'Search merchant
                 className="w-full px-3 py-2 text-left text-sm hover:bg-paper"
                 onClick={() => {
                   onChange(row.id, row);
+                  setPicked(row);
                   setQuery('');
                   setOpen(false);
                 }}
