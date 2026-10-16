@@ -10,7 +10,9 @@
     "lint": "tsc --noEmit --pretty false"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.544.0",
+    "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-qr-code": "^2.2.0",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",

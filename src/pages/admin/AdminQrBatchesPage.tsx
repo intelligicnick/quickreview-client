@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { LocationPicker } from '../../components/admin/LocationPicker';
 import { QrCodePreview } from '../../components/QrCodePreview';
 import { api, ApiError } from '../../lib/api';
+import { downloadQrPrintSheetPdf } from '../../lib/qr-print-sheet-pdf';
 
 function qrEncodeValue(row: QrRow): string {
   return row.targetUrl ?? row.claimUrl;
@@ -108,17 +109,25 @@ export function AdminQrBatchesPage() {
     }
   }
 
-  function downloadPrintSheet() {
+  async function downloadPrintSheet() {
     const batch = lastBatch ?? filtered[0]?.batchId;
-    const sheet = filtered.filter((r) => r.batchId === batch || !batch);
-    const lines = sheet.map((r) => `${r.code}\t${r.claimUrl}`).join('\n');
-    const blob = new Blob([`Code\tClaim URL\n${lines}`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qr-batch-${batch ?? 'export'}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const sheet = batch ? filtered.filter((r) => r.batchId === batch) : filtered;
+    if (!sheet.length) {
+      setError('No QR codes in the current selection to print.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await downloadQrPrintSheetPdf(
+        sheet.map((r) => ({ code: r.code, link: qrEncodeValue(r) })),
+        `qr-batch-${batch ?? 'export'}.pdf`,
+      );
+    } catch {
+      setError('Could not generate print sheet PDF.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function opensLabel(row: QrRow) {
@@ -170,10 +179,11 @@ export function AdminQrBatchesPage() {
         </button>
         <button
           type="button"
-          onClick={downloadPrintSheet}
-          className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold"
+          disabled={busy}
+          onClick={() => void downloadPrintSheet()}
+          className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-50"
         >
-          Download print sheet
+          {busy ? 'Building PDF…' : 'Download print sheet (PDF)'}
         </button>
       </div>
 
@@ -186,7 +196,7 @@ export function AdminQrBatchesPage() {
             className="min-h-11 rounded-xl border border-line px-3 text-sm"
           >
             <option value="">Select code</option>
-            {rows.filter((r) => !r.locationId).map((row) => (
+            {rows.filter((r) => !r.locationId && r.isPrinted).map((row) => (
               <option key={row.id} value={row.id}>{row.code}</option>
             ))}
           </select>

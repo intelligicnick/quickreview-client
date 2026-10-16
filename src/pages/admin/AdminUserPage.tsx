@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ActivatePlanForLocation } from '../../components/admin/ActivatePlanForLocation';
+import { AssignStandeeQr } from '../../components/admin/AssignStandeeQr';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { adminWhen, inr } from '../../lib/admin-ui';
@@ -53,7 +54,10 @@ type Account = PublicUser & {
       locationName: string;
       createdAt: string;
     }[];
-    qrByLocation: Record<string, { code: string; isMenuQr: boolean | null }[]>;
+    qrByLocation: Record<
+      string,
+      { id: string; code: string; isMenuQr: boolean | null; isPrinted: boolean }[]
+    >;
   };
   history: { id: string; summary: string; createdAt: string }[];
 };
@@ -245,6 +249,12 @@ export function AdminUserPage() {
                       {location.slug ? ` · /go/${location.slug}` : ''}
                       {qr.length ? ` · ${qr.map((c) => c.code).join(', ')}` : ''}
                     </p>
+                    <AssignStandeeQr
+                      locationId={location.id}
+                      locationName={location.name}
+                      existingCodes={qr}
+                      onAssigned={() => void reloadAccount().catch(() => undefined)}
+                    />
                     <ActivatePlanForLocation
                       compact
                       locationId={location.id}
