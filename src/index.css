@@ -204,3 +204,40 @@ textarea.field {
     transform: none !important;
   }
 }
+
+.counter-sale-shell {
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  color: #0f172a;
+  background: #f4f6fa;
+}
+
+.counter-sale-shell .cs-mono {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.counter-sale-shell .cs-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(26, 95, 214, 0.14);
+}
+
+.counter-sale-shell .cs-field {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #d5dce6;
+  background: #fff;
+  padding-block: 10px;
+  padding-inline: 12px;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.counter-sale-shell .cs-field--icon-start {
+  padding-inline-start: 2.75rem;
+}
+
+.counter-sale-shell .cs-field:focus {
+  outline: none;
+  border-color: #1a5fd6;
+  box-shadow: 0 0 0 4px rgba(26, 95, 214, 0.14);
+}

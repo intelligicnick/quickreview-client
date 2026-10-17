@@ -1,7 +1,7 @@
-import { LogOut } from 'lucide-react';
 import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { BrandMark } from '../../components/BrandMark';
+import { BrandIcon } from '../../components/BrandIcon';
+import { IconSignOut } from '../../components/counter-sale/icons';
 import {
   getCounterSaleToken,
   setCounterSaleToken,
@@ -25,22 +25,29 @@ export function CounterSaleShell() {
   }
 
   return (
-    <div className="min-h-dvh bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <BrandMark className="h-7 w-7" />
-          <span className="font-display text-sm font-bold">Counter sale</span>
+    <div className="counter-sale-shell flex min-h-dvh flex-col">
+      <header className="flex shrink-0 items-center justify-between border-b border-[#E3E8EF] bg-white px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <BrandIcon className="h-8 w-8 rounded-[8px]" />
+          <div className="min-w-0">
+            <p className="text-base font-bold leading-tight text-[#0F172A]">QuickReview</p>
+            <p className="text-xs font-medium text-[#5B6474]">Counter sale</p>
+          </div>
         </div>
         {signedIn ? (
-          <button type="button" onClick={logout} className="flex items-center gap-1 text-sm text-muted">
-            <LogOut className="h-4 w-4" />
-            Sign out
+          <button
+            type="button"
+            onClick={logout}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-[#5B6474] cs-focus hover:bg-[#F4F6FA]"
+            aria-label="Sign out"
+          >
+            <IconSignOut />
           </button>
         ) : null}
       </header>
-      <main className="mx-auto max-w-lg px-4 py-6">
+      <div className="mx-auto flex w-full max-w-[390px] min-h-0 flex-1 flex-col">
         <Outlet />
-      </main>
+      </div>
     </div>
   );
 }

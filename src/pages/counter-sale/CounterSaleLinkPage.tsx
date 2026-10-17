@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Check, Loader2, QrCode } from 'lucide-react';
+import { LinkSuccess, type LinkSuccessSummary } from '../../components/counter-sale/LinkSuccess';
+import { deriveStepStates, ProgressSteps } from '../../components/counter-sale/ProgressSteps';
+import { SelectableCard } from '../../components/counter-sale/SelectableCard';
+import { StepCard } from '../../components/counter-sale/StepCard';
+import { StickyActionBar } from '../../components/counter-sale/StickyActionBar';
+import { IconCheck, IconScan, IconSearch } from '../../components/counter-sale/icons';
 import {
   counterSaleApi,
   CounterSaleApiError,
   getCounterSaleToken,
+  setCounterSaleToken,
+  takeCounterSaleTokenFromHash,
 } from '../../lib/counter-sale-api';
 import { readQrFromVideo } from '../../lib/qr-from-video';
 
@@ -14,13 +21,19 @@ type PlaceRow = {
   formattedAddress: string | null;
 };
 
+type QrLookupStatus = 'ready' | 'assigned' | 'not_found' | 'not_printed';
+
+type QrLookupState = 'idle' | 'checking' | QrLookupStatus | 'error';
+
 function parseQrInput(raw: string): string {
   const trimmed = raw.trim();
   const fromUrl = trimmed.match(/\/q\/([A-Za-z0-9]+)/i)?.[1];
   return (fromUrl ?? trimmed).toUpperCase();
 }
 
-type QrLookupStatus = 'ready' | 'assigned' | 'not_found' | 'not_printed';
+function normalizeStandeeCode(raw: string): string {
+  return raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8);
+}
 
 function playScanSound(kind: 'success' | 'error') {
   try {
@@ -47,8 +60,28 @@ function playScanSound(kind: 'success' | 'error') {
   }
 }
 
+function resolveAgentSessionToken(): string | null {
+  const fromHash = takeCounterSaleTokenFromHash();
+  if (fromHash) {
+    setCounterSaleToken(fromHash);
+    return fromHash;
+  }
+  return getCounterSaleToken();
+}
+
+function nextActionHint(qrDone: boolean, placeDone: boolean): string {
+  if (!qrDone) return 'Scan or enter the standee code';
+  if (!placeDone) return 'Pick the Google Business profile';
+  return 'Tap Link & activate';
+}
+
+const SERVICES = [
+  { key: 'review' as const, title: 'QuickReview', subtitle: 'Google review after scan' },
+  { key: 'menu' as const, title: 'QuickCommerce', subtitle: 'Ordering & catalogue' },
+] as const;
+
 export function CounterSaleLinkPage() {
-  const token = getCounterSaleToken();
+  const [token] = useState(() => resolveAgentSessionToken());
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimer = useRef<number | null>(null);
@@ -56,6 +89,7 @@ export function CounterSaleLinkPage() {
   const lookupBusy = useRef(false);
 
   const [qrCode, setQrCode] = useState('');
+  const [qrLookup, setQrLookup] = useState<QrLookupState>('idle');
   const [qrScanHint, setQrScanHint] = useState<string | null>(null);
   const [scanActive, setScanActive] = useState(false);
   const [scanStarting, setScanStarting] = useState(false);
@@ -67,8 +101,21 @@ export function CounterSaleLinkPage() {
   const [service, setService] = useState<'review' | 'menu'>('review');
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [successSummary, setSuccessSummary] = useState<LinkSuccessSummary | null>(null);
+
+  const qrDone = qrLookup === 'ready';
+  const placeDone = Boolean(selectedPlace);
+  const serviceSelected = Boolean(service);
+  const serviceStepDone = qrDone && placeDone;
+  const doneCount = (qrDone ? 1 : 0) + (placeDone ? 1 : 0) + (serviceSelected ? 1 : 0);
+  const canLink = qrDone && placeDone && serviceSelected && !busy;
+
+  const progressStates = deriveStepStates(qrDone, placeDone, serviceStepDone);
+  const progressHint = useMemo(
+    () => `${doneCount} of 3 done · ${nextActionHint(qrDone, placeDone)}`,
+    [doneCount, qrDone, placeDone],
+  );
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -84,6 +131,30 @@ export function CounterSaleLinkPage() {
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
+  useEffect(() => {
+    if (qrCode.length !== 8) {
+      setQrLookup('idle');
+      return;
+    }
+    let cancelled = false;
+    setQrLookup('checking');
+    void (async () => {
+      try {
+        const result = await counterSaleApi<{ code: string; status: QrLookupStatus }>(
+          `/api/counter-sale/qr-codes/lookup?code=${encodeURIComponent(qrCode)}`,
+        );
+        if (cancelled) return;
+        setQrCode(result.code);
+        setQrLookup(result.status);
+      } catch {
+        if (!cancelled) setQrLookup('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qrCode]);
+
   const handleScannedRaw = useCallback(
     async (raw: string) => {
       const code = parseQrInput(raw);
@@ -95,7 +166,8 @@ export function CounterSaleLinkPage() {
         );
         if (result.status === 'ready') {
           setQrCode(result.code);
-          setQrScanHint('QR scanned — ready to assign');
+          setQrLookup('ready');
+          setQrScanHint(null);
           setScanError(null);
           playScanSound('success');
           stopCamera();
@@ -103,18 +175,22 @@ export function CounterSaleLinkPage() {
         }
         if (result.status === 'assigned') {
           setQrScanHint('Already assigned — scan a different QR');
+          setQrLookup('assigned');
           playScanSound('error');
           return;
         }
         if (result.status === 'not_printed') {
           setQrScanHint('This code is not a printed standee — scan a different QR');
+          setQrLookup('not_printed');
           playScanSound('error');
           return;
         }
         setQrScanHint('QR code not found — scan a different QR');
+        setQrLookup('not_found');
         playScanSound('error');
       } catch {
         setQrScanHint('Could not verify QR — try again or enter the code manually');
+        setQrLookup('error');
         playScanSound('error');
       } finally {
         lookupBusy.current = false;
@@ -192,6 +268,20 @@ export function CounterSaleLinkPage() {
     return <Navigate to="/counter-sale/login" replace />;
   }
 
+  function resetFlow() {
+    stopCamera();
+    setQrCode('');
+    setQrLookup('idle');
+    setQrScanHint(null);
+    setScanError(null);
+    setPlaceSearch('');
+    setPlaceResults([]);
+    setSelectedPlace(null);
+    setService('review');
+    setError(null);
+    setSuccessSummary(null);
+  }
+
   function startScan() {
     setError(null);
     setScanError(null);
@@ -221,12 +311,11 @@ export function CounterSaleLinkPage() {
   }
 
   async function submit() {
-    if (!selectedPlace || !qrCode.trim()) return;
+    if (!selectedPlace || !qrDone) return;
     setBusy(true);
     setError(null);
-    setSuccess(null);
     try {
-      const result = await counterSaleApi<{
+      await counterSaleApi<{
         targetUrl: string | null;
         location: { googleReviewUrl: string | null; name: string };
       }>('/api/counter-sale/provisions', {
@@ -237,11 +326,11 @@ export function CounterSaleLinkPage() {
           service,
         },
       });
-      setSuccess(`${result.location.name} linked.${result.targetUrl ? ` Scans go to: ${result.targetUrl}` : ''}`);
-      setQrCode('');
-      setQrScanHint(null);
-      setSelectedPlace(null);
-      setPlaceResults([]);
+      setSuccessSummary({
+        qrCode,
+        businessName: selectedPlace.name,
+        service,
+      });
     } catch (err) {
       setError(err instanceof CounterSaleApiError ? err.message : 'Could not link');
     } finally {
@@ -249,153 +338,191 @@ export function CounterSaleLinkPage() {
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-bold">Link standee</h1>
-        <p className="mt-1 text-sm text-muted">Scan the QR, pick the Google business, choose the product.</p>
-      </div>
-
-      {error ? <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
-      {success ? (
-        <p className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          <Check className="mt-0.5 h-4 w-4 shrink-0" />
-          {success}
+  function qrHelperText(): ReactNode {
+    if (qrLookup === 'ready') {
+      return (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-[#0F7B4B]">
+          <IconCheck className="h-4 w-4 shrink-0" />
+          Standee found — not linked yet
         </p>
-      ) : null}
+      );
+    }
+    if (qrCode.length === 0) {
+      return <p className="mt-2 text-sm text-[#5B6474]">Printed under the QR on the standee</p>;
+    }
+    if (qrCode.length < 8) {
+      return (
+        <p className="mt-2 text-sm text-[#5B6474]">{8 - qrCode.length} more character{8 - qrCode.length === 1 ? '' : 's'}</p>
+      );
+    }
+    if (qrLookup === 'checking') {
+      return <p className="mt-2 text-sm text-[#5B6474]">Checking standee code…</p>;
+    }
+    if (qrLookup === 'assigned') {
+      return <p className="mt-2 text-sm text-[#B45309]">This standee is already linked.</p>;
+    }
+    if (qrLookup === 'not_printed' || qrLookup === 'not_found') {
+      return <p className="mt-2 text-sm text-[#B45309]">Standee code not found. Check the code and try again.</p>;
+    }
+    if (qrLookup === 'error') {
+      return <p className="mt-2 text-sm text-[#B45309]">Could not verify code. Try again.</p>;
+    }
+    return null;
+  }
 
-      <section className="rounded-2xl border border-line bg-white p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Step 1 — QR code</p>
-        {scanActive ? (
-          <div className="relative mt-3 overflow-hidden rounded-2xl bg-ink">
-            <video
-              ref={videoRef}
-              className="aspect-square w-full object-cover"
-              muted
-              playsInline
-            />
-            {scanStarting ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-ink/50">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-              </div>
-            ) : null}
-            <div
-              className="pointer-events-none absolute inset-8 rounded-xl border-2 border-dashed border-white/70"
-              aria-hidden
-            />
-            <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-white/90">
-              Point at the standee QR code
-            </p>
-            <canvas ref={canvasRef} className="hidden" aria-hidden />
-          </div>
-        ) : null}
-        {qrScanHint ? (
-          <p
-            className={`mt-2 rounded-xl px-3 py-2 text-sm ${
-              qrScanHint.startsWith('QR scanned')
-                ? 'bg-emerald-50 text-emerald-900'
-                : 'bg-amber-50 text-amber-950'
-            }`}
-          >
-            {qrScanHint}
+  if (successSummary) {
+    return <LinkSuccess summary={successSummary} onLinkAnother={resetFlow} />;
+  }
+
+  const codeInputValid = qrLookup === 'ready';
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-5">
+        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Link a standee</h1>
+        <p className="mt-2 text-base leading-relaxed text-[#5B6474]">
+          Three quick steps to put a new standee live at the counter.
+        </p>
+
+        <ProgressSteps states={progressStates} />
+
+        {error ? (
+          <p className="mt-4 rounded-[14px] bg-red-50 px-3 py-2.5 text-sm text-red-800" role="alert">
+            {error}
           </p>
         ) : null}
-        {scanError ? <p className="mt-2 text-sm text-muted">{scanError}</p> : null}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {!scanActive ? (
-            <button
-              type="button"
-              onClick={startScan}
-              className="inline-flex items-center gap-2 rounded-xl border border-line px-4 py-2 text-sm font-medium"
-            >
-              <QrCode className="h-4 w-4" />
-              Scan QR
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={stopCamera}
-              className="inline-flex items-center gap-2 rounded-xl border border-line px-4 py-2 text-sm font-medium text-muted"
-            >
-              Cancel scan
-            </button>
-          )}
-        </div>
-        <label className="mt-3 block text-sm">
-          <span className="text-muted">Or enter code</span>
-          <input
-            className="mt-1 w-full rounded-xl border border-line px-3 py-3 font-mono uppercase"
-            value={qrCode}
-            onChange={(e) => {
-              setQrCode(e.target.value);
-              setQrScanHint(null);
-            }}
-            placeholder="AB12CD34"
-          />
-        </label>
-      </section>
 
-      <section className="rounded-2xl border border-line bg-white p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Step 2 — Google profile</p>
-        <form onSubmit={searchPlaces} className="mt-3 flex gap-2">
-          <input
-            className="min-w-0 flex-1 rounded-xl border border-line px-3 py-2 text-sm"
-            value={placeSearch}
-            onChange={(e) => setPlaceSearch(e.target.value)}
-            placeholder="Business name + city"
-          />
-          <button type="submit" disabled={busy} className="shrink-0 rounded-xl bg-paper px-3 py-2 text-sm font-medium">
-            Search
-          </button>
-        </form>
-        {placeResults.length > 0 ? (
-          <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-            {placeResults.map((row) => (
-              <li key={row.placeId}>
+        <div className="mt-4 space-y-3">
+          <StepCard step={1} title="Standee QR code" done={qrDone}>
+            {scanActive ? (
+              <div className="space-y-3">
+                {scanStarting ? (
+                  <p className="text-center text-sm font-medium text-[#5B6474]">Opening camera…</p>
+                ) : null}
+                <div className="relative overflow-hidden rounded-[14px] bg-[#0F172A]">
+                  <video ref={videoRef} className="aspect-[4/3] w-full object-cover" muted playsInline />
+                  <div
+                    className="pointer-events-none absolute inset-5 rounded-[12px] border-2 border-dashed border-white/70"
+                    aria-hidden
+                  />
+                  <canvas ref={canvasRef} className="hidden" aria-hidden />
+                </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedPlace(row)}
-                  className={`w-full rounded-lg px-2 py-2 text-left text-sm ${
-                    selectedPlace?.placeId === row.placeId ? 'bg-accent/10 ring-1 ring-accent' : 'hover:bg-paper'
-                  }`}
+                  onClick={stopCamera}
+                  className="min-h-11 w-full rounded-[12px] border border-[#E3E8EF] text-sm font-semibold text-[#5B6474] cs-focus"
                 >
-                  {row.name}
-                  {row.formattedAddress ? (
-                    <span className="block text-xs text-muted">{row.formattedAddress}</span>
-                  ) : null}
+                  Cancel scan
                 </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </section>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startScan}
+                className="flex min-h-16 w-full items-center gap-3 rounded-[14px] bg-[#1A5FD6] px-4 text-left text-white cs-focus"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white/20">
+                  <IconScan />
+                </span>
+                <span>
+                  <span className="block text-base font-semibold">Scan standee QR</span>
+                  <span className="mt-0.5 block text-sm text-white/90">Point the camera at the standee</span>
+                </span>
+              </button>
+            )}
 
-      <section className="rounded-2xl border border-line bg-white p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Step 3 — Service</p>
-        <div className="mt-3 flex gap-2">
-          {(['review', 'menu'] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setService(key)}
-              className={`flex-1 rounded-xl py-3 text-sm font-semibold ${
-                service === key ? 'bg-ink text-white' : 'border border-line'
-              }`}
-            >
-              {key === 'review' ? 'QuickReview' : 'QuickCommerce'}
-            </button>
-          ))}
+            {qrScanHint ? (
+              <p className="mt-3 rounded-[12px] bg-amber-50 px-3 py-2 text-sm text-amber-950">{qrScanHint}</p>
+            ) : null}
+            {scanError ? <p className="mt-2 text-sm text-[#5B6474]">{scanError}</p> : null}
+
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-[#E3E8EF]" />
+              <span className="text-xs font-medium text-[#5B6474]">or type the code</span>
+              <div className="h-px flex-1 bg-[#E3E8EF]" />
+            </div>
+
+            <label className="block text-sm font-medium text-[#3A4352]">
+              8-character code
+              <input
+                className={`cs-field cs-mono mt-2 w-full py-3 text-center text-[18px] tracking-[0.18em] uppercase ${
+                  codeInputValid ? 'border-[#0F7B4B]' : ''
+                }`}
+                value={qrCode}
+                onChange={(e) => {
+                  setQrCode(normalizeStandeeCode(e.target.value));
+                  setQrScanHint(null);
+                }}
+                maxLength={8}
+                autoComplete="off"
+                spellCheck={false}
+                inputMode="text"
+                aria-invalid={qrCode.length === 8 && !codeInputValid && qrLookup !== 'checking'}
+              />
+            </label>
+            {qrHelperText()}
+          </StepCard>
+
+          <StepCard step={2} title="Google Business profile" done={placeDone}>
+            <form role="search" onSubmit={searchPlaces} className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <label htmlFor="place-search" className="sr-only">Search Google Business profile</label>
+                <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5B6474]" />
+                <input
+                  id="place-search"
+                  className="cs-field cs-field--icon-start w-full"
+                  value={placeSearch}
+                  onChange={(e) => setPlaceSearch(e.target.value)}
+                  placeholder="Business name, city"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={busy}
+                className="min-h-11 shrink-0 rounded-[12px] border border-[#E3E8EF] bg-white px-4 text-sm font-semibold text-[#0F172A] cs-focus disabled:opacity-50"
+              >
+                Search
+              </button>
+            </form>
+
+            {placeResults.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#5B6474]">
+                  {placeResults.length} match{placeResults.length === 1 ? '' : 'es'} on Google
+                </p>
+                <div className="mt-2 space-y-2" role="radiogroup" aria-label="Google Business profile">
+                  {placeResults.map((row) => (
+                    <SelectableCard
+                      key={row.placeId}
+                      name={row.name}
+                      description={row.formattedAddress ?? undefined}
+                      selected={selectedPlace?.placeId === row.placeId}
+                      onSelect={() => setSelectedPlace(row)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </StepCard>
+
+          <StepCard step={3} title="Service" done={qrDone && placeDone && serviceSelected}>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Service">
+              {SERVICES.map((row) => (
+                <SelectableCard
+                  key={row.key}
+                  layout="grid"
+                  name={row.title}
+                  description={row.subtitle}
+                  selected={service === row.key}
+                  onSelect={() => setService(row.key)}
+                />
+              ))}
+            </div>
+          </StepCard>
         </div>
-      </section>
+      </main>
 
-      <button
-        type="button"
-        disabled={busy || !qrCode.trim() || !selectedPlace}
-        onClick={() => void submit()}
-        className="w-full rounded-xl bg-ink py-3 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        Link & activate
-      </button>
+      <StickyActionBar disabled={!canLink} busy={busy} hint={progressHint} onAction={() => void submit()} />
     </div>
   );
 }

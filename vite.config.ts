@@ -10,7 +10,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
-      includeAssets: ['favicon.png', 'logo.png'],
+      includeAssets: ['favicon.png', 'logo-q.png', 'pwa-icon-192.png', 'pwa-icon-512.png'],
       manifest: {
         name: 'QuickReview Counter Sale',
         short_name: 'Counter sale',
@@ -19,17 +19,19 @@ export default defineConfig({
         scope: '/counter-sale/',
         display: 'standalone',
         background_color: '#faf8f5',
-        theme_color: '#1a1a1a',
+        theme_color: '#1557d6',
         icons: [
           {
-            src: '/favicon.png',
+            src: '/pwa-icon-192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: '/logo.png',
+            src: '/pwa-icon-512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
         ],
       },
