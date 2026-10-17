@@ -299,7 +299,6 @@ export function ReviewPage() {
       ? RATING_OPTIONS[selected]
       : null;
   const expandedRateStep = step === 'rate' && selected > 0;
-  const questionsOpen = expandedRateStep && selected >= 4;
   const privateFeedbackOpen = expandedRateStep && selected >= 1 && selected <= 3;
 
   return (
