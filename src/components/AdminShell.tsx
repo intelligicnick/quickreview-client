@@ -9,6 +9,7 @@ import {
   Package,
   QrCode,
   ShoppingBag,
+  Smartphone,
   Store,
   Users,
   X,
@@ -38,6 +39,7 @@ const NAV_GROUPS = [
         end: false as const,
         countKey: 'supportInbox' as const,
       },
+      { to: '/admin/counter-sale', label: 'Counter sale', icon: Smartphone, end: false as const },
     ],
   },
   {

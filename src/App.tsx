@@ -13,6 +13,7 @@ import { AdminContactPage } from './pages/admin/AdminContactPage';
 import { AdminMarketplacePage } from './pages/admin/AdminMarketplacePage';
 import { AdminQrBatchesPage } from './pages/admin/AdminQrBatchesPage';
 import { AdminActivityPage } from './pages/admin/AdminActivityPage';
+import { AdminCounterSalePage } from './pages/admin/AdminCounterSalePage';
 import { AdminSubscriptionsPage } from './pages/admin/AdminSubscriptionsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { BusinessDetailPage } from './pages/BusinessDetailPage';
@@ -220,6 +221,7 @@ export default function App() {
         <Route path="marketplace" element={<AdminMarketplacePage />} />
         <Route path="contact" element={<AdminContactPage />} />
         <Route path="activity" element={<AdminActivityPage />} />
+        <Route path="counter-sale" element={<AdminCounterSalePage />} />
       </Route>
       <Route path="*" element={<PublicEntry />} />
     </Routes>
