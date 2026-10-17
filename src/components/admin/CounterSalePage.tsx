@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ExternalLink,
+  KeyRound,
   LogIn,
   Link2,
   Plus,
@@ -45,6 +46,7 @@ export interface CounterSalePageProps {
   onAddAgent: (username: string, pin: string) => Promise<void>;
   onToggleAgent: (agentId: string, nextStatus: Agent['status']) => Promise<void>;
   onLoginAsAgent: (agentId: string) => Promise<void>;
+  onChangeAgentPin: (agentId: string, pin: string) => Promise<void>;
   onSearchPlaces: (query: string) => Promise<GooglePlace[]>;
   onLinkStandee: (input: { qrCode: string; service: Service; placeId: string }) => Promise<void>;
   onTransferShop?: (input: { businessId: string; email: string }) => Promise<void>;
@@ -62,7 +64,7 @@ export function parseQrInput(raw: string): string {
   return (m ? m[1] : v).toUpperCase();
 }
 
-const randomPin = () => String(Math.floor(10000 + Math.random() * 90000));
+const randomPin = () => String(Math.floor(100 + Math.random() * 900));
 
 const inputCls =
   'h-11 w-full rounded-[10px] border border-slate-300 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20';
@@ -345,19 +347,29 @@ function LinkStandeeCard({ onSearchPlaces, onLinkStandee, onScanQr }: CounterSal
   );
 }
 
-function AgentsCard({ agents, onAddAgent, onToggleAgent, onLoginAsAgent }: CounterSalePageProps) {
+function AgentsCard({
+  agents,
+  onAddAgent,
+  onToggleAgent,
+  onLoginAsAgent,
+  onChangeAgentPin,
+}: CounterSalePageProps) {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loginAsBusyId, setLoginAsBusyId] = useState<string | null>(null);
+  const [pinEditId, setPinEditId] = useState<string | null>(null);
+  const [pinEditValue, setPinEditValue] = useState('');
+  const [pinEditBusy, setPinEditBusy] = useState(false);
+  const [pinEditError, setPinEditError] = useState<string | null>(null);
 
-  const valid = /^[a-z0-9._-]{3,}$/i.test(username.trim()) && /^\d{5}$/.test(pin);
+  const valid = /^[a-z0-9._-]{3,}$/i.test(username.trim()) && /^\d{3}$/.test(pin);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!valid) {
-      setError('Username (3+ chars) and a 5-digit PIN are required.');
+      setError('Username (3+ chars) and a 3-digit PIN are required.');
       return;
     }
     setBusy(true);
@@ -379,7 +391,7 @@ function AgentsCard({ agents, onAddAgent, onToggleAgent, onLoginAsAgent }: Count
         id="agents-h"
         icon={<UserPlus size={20} aria-hidden="true" />}
         title="Field agents"
-        desc="Agents sign in to the counter-sale app with a username and 5-digit PIN."
+        desc="Agents sign in to the counter-sale app with a username and 3-digit PIN."
       />
 
       <form onSubmit={submit} className="grid grid-cols-[1.4fr_1fr] gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -404,10 +416,10 @@ function AgentsCard({ agents, onAddAgent, onToggleAgent, onLoginAsAgent }: Count
             <input
               id="pin"
               inputMode="numeric"
-              maxLength={5}
+              maxLength={3}
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 5))}
-              placeholder="•••••"
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 3))}
+              placeholder="•••"
               className={`${inputCls} px-3 font-mono tracking-[0.2em]`}
             />
             <button
@@ -445,52 +457,147 @@ function AgentsCard({ agents, onAddAgent, onToggleAgent, onLoginAsAgent }: Count
         ) : null}
         {agents.map((a) => {
           const active = a.status === 'active';
+          const editingPin = pinEditId === a.id;
           return (
-            <div key={a.id} className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-1 py-3.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-blue-900">
-                {a.username.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex min-w-[120px] flex-1 flex-col gap-0.5">
-                <span className="font-mono text-sm font-medium">{a.username}</span>
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold ${active ? 'text-green-800' : 'text-slate-500'}`}
-                >
+            <div key={a.id} className="border-b border-slate-100 px-1 py-3.5">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-blue-900">
+                  {a.username.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex min-w-[120px] flex-1 flex-col gap-0.5">
+                  <span className="font-mono text-sm font-medium">{a.username}</span>
                   <span
-                    aria-hidden="true"
-                    className={`h-[7px] w-[7px] rounded-full ${active ? 'bg-green-600' : 'bg-slate-400'}`}
-                  />
-                  {active ? 'Active' : 'Disabled'}
-                </span>
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold ${active ? 'text-green-800' : 'text-slate-500'}`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`h-[7px] w-[7px] rounded-full ${active ? 'bg-green-600' : 'bg-slate-400'}`}
+                    />
+                    {active ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    disabled={!active || loginAsBusyId === a.id}
+                    onClick={async () => {
+                      setLoginAsBusyId(a.id);
+                      try {
+                        await onLoginAsAgent(a.id);
+                      } finally {
+                        setLoginAsBusyId(null);
+                      }
+                    }}
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <LogIn size={14} aria-hidden="true" />
+                    {loginAsBusyId === a.id ? 'Opening…' : 'Login as'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingPin) {
+                        setPinEditId(null);
+                        setPinEditValue('');
+                        setPinEditError(null);
+                        return;
+                      }
+                      setPinEditId(a.id);
+                      setPinEditValue('');
+                      setPinEditError(null);
+                    }}
+                    className={`flex h-9 items-center gap-1.5 rounded-lg border bg-white px-3 text-[13px] font-semibold hover:bg-slate-50 ${
+                      editingPin ? 'border-blue-700 text-blue-700' : 'border-slate-300 text-slate-900'
+                    }`}
+                  >
+                    <KeyRound size={14} aria-hidden="true" />
+                    Change password
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void onToggleAgent(a.id, active ? 'disabled' : 'active')}
+                    className={`h-9 rounded-lg border bg-white px-3 text-[13px] font-semibold ${
+                      active
+                        ? 'border-red-200 text-red-700 hover:bg-red-50'
+                        : 'border-slate-300 text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    {active ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  disabled={!active || loginAsBusyId === a.id}
-                  onClick={async () => {
-                    setLoginAsBusyId(a.id);
-                    try {
-                      await onLoginAsAgent(a.id);
-                    } finally {
-                      setLoginAsBusyId(null);
+              {editingPin ? (
+                <form
+                  className="mt-3 flex flex-wrap items-end gap-2 pl-12"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!/^\d{3}$/.test(pinEditValue)) {
+                      setPinEditError('Enter a 3-digit PIN.');
+                      return;
                     }
+                    setPinEditBusy(true);
+                    setPinEditError(null);
+                    void onChangeAgentPin(a.id, pinEditValue)
+                      .then(() => {
+                        setPinEditId(null);
+                        setPinEditValue('');
+                      })
+                      .catch((err) => {
+                        setPinEditError(err instanceof Error ? err.message : 'Could not update PIN.');
+                      })
+                      .finally(() => setPinEditBusy(false));
                   }}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <LogIn size={14} aria-hidden="true" />
-                  {loginAsBusyId === a.id ? 'Opening…' : 'Login as'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onToggleAgent(a.id, active ? 'disabled' : 'active')}
-                  className={`h-9 rounded-lg border bg-white px-3 text-[13px] font-semibold ${
-                    active
-                      ? 'border-red-200 text-red-700 hover:bg-red-50'
-                      : 'border-slate-300 text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  {active ? 'Disable' : 'Enable'}
-                </button>
-              </div>
+                  <div className="flex min-w-[200px] flex-1 flex-col gap-1">
+                    <label htmlFor={`pin-edit-${a.id}`} className="text-xs font-semibold text-slate-600">
+                      New 3-digit PIN
+                    </label>
+                    <div className="flex gap-1.5">
+                      <input
+                        id={`pin-edit-${a.id}`}
+                        inputMode="numeric"
+                        maxLength={3}
+                        value={pinEditValue}
+                        onChange={(e) => setPinEditValue(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                        className={`${inputCls} max-w-[140px] font-mono tracking-[0.2em]`}
+                        placeholder="•••"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        aria-label="Generate random PIN"
+                        className={iconBtnCls}
+                        onClick={() => setPinEditValue(randomPin())}
+                      >
+                        <RefreshCw size={18} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={pinEditBusy || pinEditValue.length !== 3}
+                    className="h-11 rounded-[10px] bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                  >
+                    {pinEditBusy ? 'Saving…' : 'Save PIN'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinEditId(null);
+                      setPinEditValue('');
+                      setPinEditError(null);
+                    }}
+                    className="h-11 rounded-[10px] border border-slate-300 px-4 text-sm font-semibold hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  {pinEditError ? (
+                    <p role="alert" className="w-full text-sm font-medium text-red-700">
+                      {pinEditError}
+                    </p>
+                  ) : null}
+                </form>
+              ) : null}
             </div>
           );
         })}

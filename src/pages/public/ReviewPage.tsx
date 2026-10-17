@@ -300,6 +300,7 @@ export function ReviewPage() {
       : null;
   const expandedRateStep = step === 'rate' && selected > 0;
   const questionsOpen = expandedRateStep && selected >= 4;
+  const privateFeedbackOpen = expandedRateStep && selected >= 1 && selected <= 3;
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-white sm:bg-transparent">
@@ -349,27 +350,27 @@ export function ReviewPage() {
               compact={expandedRateStep}
               hideFooter={expandedRateStep}
             >
-              <div className="text-center">
+              <div className={`text-center ${expandedRateStep ? 'shrink-0' : ''}`}>
                 <h1
                   className={`font-display font-bold leading-tight tracking-tight text-ink ${
-                    questionsOpen
+                    expandedRateStep
                       ? 'text-lg sm:text-xl'
                       : 'text-[1.65rem] sm:text-[1.85rem]'
                   }`}
                 >
                   {shop.name}
                 </h1>
-                {!questionsOpen && shop.address ? (
+                {!expandedRateStep && shop.address ? (
                   <p className="mt-2 text-[15px] leading-relaxed text-muted">{shop.address}</p>
-                ) : !questionsOpen ? (
+                ) : !expandedRateStep ? (
                   <p className="mt-3 text-[15px] leading-relaxed text-muted">
                     How was your experience with us today?
                   </p>
                 ) : null}
 
-                {questionsOpen ? (
+                {expandedRateStep ? (
                   <div
-                    className="mt-2 flex items-center justify-center gap-2"
+                    className={`flex items-center justify-center gap-2 ${privateFeedbackOpen ? 'mt-1' : 'mt-2'}`}
                     onMouseLeave={() => setHovered(0)}
                     role="radiogroup"
                     aria-label="Star rating"
@@ -470,18 +471,40 @@ export function ReviewPage() {
               {selected >= 1 && selected <= 3 ? (
                 <form
                   className={`border-t border-line ${
-                    expandedRateStep ? 'mt-3 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'mt-8 pt-6'
+                    privateFeedbackOpen
+                      ? 'mt-2 flex min-h-0 flex-1 flex-col pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+                      : expandedRateStep
+                        ? 'mt-3 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+                        : 'mt-8 pt-6'
                   }`}
                   onSubmit={(e) => void handleSubmitPrivateFeedback(e)}
                 >
-                  <div className="text-center">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand">
-                      <MessageSquareLock className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                  <div className={`text-center ${privateFeedbackOpen ? 'shrink-0' : ''}`}>
+                    <div
+                      className={`mx-auto flex items-center justify-center rounded-full bg-brand/10 text-brand ${
+                        privateFeedbackOpen ? 'h-10 w-10' : 'h-14 w-14'
+                      }`}
+                    >
+                      <MessageSquareLock
+                        className={privateFeedbackOpen ? 'h-5 w-5' : 'h-6 w-6'}
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
                     </div>
-                    <h2 className="mt-4 font-display text-lg font-bold tracking-tight text-ink">
+                    <h2
+                      className={`font-display font-bold tracking-tight text-ink ${
+                        privateFeedbackOpen ? 'mt-2 text-base' : 'mt-4 text-lg'
+                      }`}
+                    >
                       Private feedback
                     </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">
+                    <p
+                      className={`text-muted ${
+                        privateFeedbackOpen
+                          ? 'mt-1 text-xs leading-snug'
+                          : 'mt-2 text-sm leading-relaxed'
+                      }`}
+                    >
                       Only {shop.name} sees this — nothing posts to Google.
                     </p>
                   </div>
@@ -493,16 +516,24 @@ export function ReviewPage() {
                       setPrivateFeedbackText(e.target.value);
                       if (privateFeedbackError) setPrivateFeedbackError(null);
                     }}
-                    rows={4}
+                    rows={privateFeedbackOpen ? 2 : 4}
                     maxLength={2000}
                     required
                     placeholder="What could have been better?"
-                    className="mt-4 w-full resize-y rounded-2xl border border-line bg-white px-4 py-3.5 text-sm leading-relaxed text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                    className={`w-full rounded-2xl border border-line bg-white px-4 text-sm leading-relaxed text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 ${
+                      privateFeedbackOpen
+                        ? 'mt-2 min-h-[4.5rem] flex-1 resize-none py-2.5'
+                        : 'mt-4 resize-y py-3.5'
+                    }`}
                   />
                   {privateFeedbackError ? (
-                    <p className="mt-2 text-sm text-red-600" role="alert">{privateFeedbackError}</p>
+                    <p className="mt-1 shrink-0 text-sm text-red-600" role="alert">{privateFeedbackError}</p>
                   ) : null}
-                  <button type="submit" disabled={submittingFeedback} className="btn-gradient mt-4 w-full">
+                  <button
+                    type="submit"
+                    disabled={submittingFeedback}
+                    className={`btn-gradient w-full shrink-0 ${privateFeedbackOpen ? 'mt-2' : 'mt-4'}`}
+                  >
                     {submittingFeedback ? 'Sending…' : 'Send feedback'}
                   </button>
                 </form>

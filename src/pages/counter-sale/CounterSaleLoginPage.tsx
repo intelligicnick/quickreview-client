@@ -1,11 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { ThreeDigitCaptcha } from '../../components/counter-sale/ThreeDigitCaptcha';
+import {
+  COUNTER_SALE_PIN_LENGTH,
+  newLoginCaptcha,
+  normalizeCounterSalePin,
+} from '../../lib/counter-sale-pin';
 import { counterSaleApi, CounterSaleApiError, getCounterSaleToken, setCounterSaleToken } from '../../lib/counter-sale-api';
 
 export function CounterSaleLoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
+  const [captchaCode, setCaptchaCode] = useState(() => newLoginCaptcha());
+  const [captchaInput, setCaptchaInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -13,8 +21,22 @@ export function CounterSaleLoginPage() {
     return <Navigate to="/counter-sale/link" replace />;
   }
 
+  const captchaOk = captchaInput === captchaCode;
+  const pinOk = pin.length === COUNTER_SALE_PIN_LENGTH;
+  const canSubmit = captchaOk && pinOk && username.trim().length >= 3 && !busy;
+
+  function refreshCaptcha() {
+    setCaptchaCode(newLoginCaptcha());
+    setCaptchaInput('');
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!captchaOk) {
+      setError('Enter the 3-digit security check shown above.');
+      refreshCaptcha();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -26,46 +48,65 @@ export function CounterSaleLoginPage() {
       navigate('/counter-sale/link', { replace: true });
     } catch (err) {
       setError(err instanceof CounterSaleApiError ? err.message : 'Sign in failed');
+      refreshCaptcha();
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex-1 space-y-6 px-4 py-5">
+    <div className="flex flex-1 flex-col px-4 py-5">
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Sign in</h1>
-        <p className="mt-1.5 text-sm text-muted">Use the username and PIN from your supervisor.</p>
+        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Sign in</h1>
+        <p className="mt-2 text-base text-[#5B6474]">Username and 3-digit code from your supervisor.</p>
       </div>
-      {error ? <p className="rounded-2xl bg-red-50 px-3 py-2.5 text-sm text-red-800">{error}</p> : null}
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-sm">
-        <label className="block text-sm">
-          <span className="font-semibold">Username</span>
+
+      {error ? (
+        <p className="mt-4 rounded-[14px] bg-red-50 px-3 py-2.5 text-sm text-red-800" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <form onSubmit={onSubmit} className="mt-5 space-y-5 rounded-[18px] border border-[#E3E8EF] bg-white p-4">
+        <ThreeDigitCaptcha
+          code={captchaCode}
+          value={captchaInput}
+          onChange={setCaptchaInput}
+          onRefresh={refreshCaptcha}
+        />
+
+        <label className="block text-sm font-medium text-[#3A4352]">
+          Username
           <input
-            className="mt-2 w-full rounded-xl border border-line px-3 py-3"
+            className="cs-field mt-2 w-full"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
             required
+            minLength={3}
           />
         </label>
-        <label className="block text-sm">
-          <span className="font-semibold">5-digit PIN</span>
+
+        <label className="block text-sm font-medium text-[#3A4352]">
+          3-digit agent code
           <input
-            className="mt-2 w-full rounded-xl border border-line px-3 py-3 font-mono text-lg tracking-widest"
+            className="cs-field cs-mono mt-2 w-full py-3 text-center text-[22px] tracking-[0.45em]"
             value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 5))}
+            onChange={(e) => setPin(normalizeCounterSalePin(e.target.value))}
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="\d{5}"
-            maxLength={5}
+            pattern="\d{3}"
+            maxLength={COUNTER_SALE_PIN_LENGTH}
             required
           />
         </label>
+
         <button
           type="submit"
-          disabled={busy || pin.length !== 5}
-          className="btn-gradient w-full py-3.5 text-sm font-bold disabled:opacity-50"
+          disabled={!canSubmit}
+          className={`h-14 w-full rounded-[14px] text-base font-semibold cs-focus ${
+            canSubmit ? 'bg-[#1A5FD6] text-white' : 'cursor-not-allowed bg-[#E3E8EF] text-[#5B6474]'
+          }`}
         >
           Continue
         </button>

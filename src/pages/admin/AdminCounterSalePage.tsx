@@ -127,6 +127,17 @@ export function AdminCounterSalePage() {
           const url = `${window.location.origin}/counter-sale/link#t=${encodeURIComponent(data.accessToken)}`;
           window.open(url, '_blank', 'noopener,noreferrer');
         }}
+        onChangeAgentPin={async (agentId, pin) => {
+          try {
+            await api(`/api/admin/counter-sale/agents/${agentId}/pin`, {
+              method: 'PATCH',
+              body: { pin },
+            });
+            setToast('Agent PIN updated.');
+          } catch (err) {
+            throw err instanceof ApiError ? new Error(err.message) : err;
+          }
+        }}
         onSearchPlaces={async (query) => {
           if (query.length < 3) {
             throw new Error('Type at least 3 characters to search.');

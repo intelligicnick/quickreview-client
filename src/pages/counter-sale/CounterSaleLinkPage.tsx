@@ -5,7 +5,8 @@ import { deriveStepStates, ProgressSteps } from '../../components/counter-sale/P
 import { SelectableCard } from '../../components/counter-sale/SelectableCard';
 import { StepCard } from '../../components/counter-sale/StepCard';
 import { StickyActionBar } from '../../components/counter-sale/StickyActionBar';
-import { IconCheck, IconScan, IconSearch } from '../../components/counter-sale/icons';
+import { StandeeQrScanner } from '../../components/counter-sale/StandeeQrScanner';
+import { IconCheck, IconSearch } from '../../components/counter-sale/icons';
 import {
   counterSaleApi,
   CounterSaleApiError,
@@ -13,7 +14,6 @@ import {
   setCounterSaleToken,
   takeCounterSaleTokenFromHash,
 } from '../../lib/counter-sale-api';
-import { readQrFromVideo } from '../../lib/qr-from-video';
 
 type PlaceRow = {
   placeId: string;
@@ -82,17 +82,12 @@ const SERVICES = [
 
 export function CounterSaleLinkPage() {
   const [token] = useState(() => resolveAgentSessionToken());
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const scanTimer = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const lookupBusy = useRef(false);
+  const [scannerEpoch, setScannerEpoch] = useState(0);
 
   const [qrCode, setQrCode] = useState('');
   const [qrLookup, setQrLookup] = useState<QrLookupState>('idle');
   const [qrScanHint, setQrScanHint] = useState<string | null>(null);
-  const [scanActive, setScanActive] = useState(false);
-  const [scanStarting, setScanStarting] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
   const [placeSearch, setPlaceSearch] = useState('');
@@ -116,20 +111,6 @@ export function CounterSaleLinkPage() {
     () => `${doneCount} of 3 done · ${nextActionHint(qrDone, placeDone)}`,
     [doneCount, qrDone, placeDone],
   );
-
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    if (scanTimer.current != null) {
-      window.clearInterval(scanTimer.current);
-      scanTimer.current = null;
-    }
-    setScanStarting(false);
-    setScanActive(false);
-  }, []);
-
-  useEffect(() => () => stopCamera(), [stopCamera]);
 
   useEffect(() => {
     if (qrCode.length !== 8) {
@@ -170,7 +151,7 @@ export function CounterSaleLinkPage() {
           setQrScanHint(null);
           setScanError(null);
           playScanSound('success');
-          stopCamera();
+          setScannerEpoch((e) => e + 1);
           return;
         }
         if (result.status === 'assigned') {
@@ -196,80 +177,15 @@ export function CounterSaleLinkPage() {
         lookupBusy.current = false;
       }
     },
-    [stopCamera],
+    [],
   );
-
-  useEffect(() => {
-    if (!scanActive) return;
-
-    let cancelled = false;
-    setScanStarting(true);
-    setScanError(null);
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setScanError('Camera scan is not supported on this browser. Enter the code manually.');
-      setScanActive(false);
-      setScanStarting(false);
-      return;
-    }
-
-    void (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: 'environment' } },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          await video.play();
-        }
-        setScanStarting(false);
-        scanTimer.current = window.setInterval(() => {
-          void (async () => {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            if (!video || !canvas || video.readyState < 2) return;
-            try {
-              const raw = await readQrFromVideo(video, canvas);
-              if (!raw) return;
-              await handleScannedRaw(raw);
-            } catch {
-              /* keep scanning */
-            }
-          })();
-        }, 300);
-      } catch {
-        if (!cancelled) {
-          setScanError('Allow camera access or type the QR code below.');
-          setScanActive(false);
-          setScanStarting(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      if (scanTimer.current != null) {
-        window.clearInterval(scanTimer.current);
-        scanTimer.current = null;
-      }
-    };
-  }, [scanActive, stopCamera, handleScannedRaw]);
 
   if (!token) {
     return <Navigate to="/counter-sale/login" replace />;
   }
 
   function resetFlow() {
-    stopCamera();
+    setScannerEpoch((e) => e + 1);
     setQrCode('');
     setQrLookup('idle');
     setQrScanHint(null);
@@ -280,13 +196,6 @@ export function CounterSaleLinkPage() {
     setService('review');
     setError(null);
     setSuccessSummary(null);
-  }
-
-  function startScan() {
-    setError(null);
-    setScanError(null);
-    setQrScanHint(null);
-    setScanActive(true);
   }
 
   async function searchPlaces(event: FormEvent) {
@@ -394,42 +303,11 @@ export function CounterSaleLinkPage() {
 
         <div className="mt-4 space-y-3">
           <StepCard step={1} title="Standee QR code" done={qrDone}>
-            {scanActive ? (
-              <div className="space-y-3">
-                {scanStarting ? (
-                  <p className="text-center text-sm font-medium text-[#5B6474]">Opening camera…</p>
-                ) : null}
-                <div className="relative overflow-hidden rounded-[14px] bg-[#0F172A]">
-                  <video ref={videoRef} className="aspect-[4/3] w-full object-cover" muted playsInline />
-                  <div
-                    className="pointer-events-none absolute inset-5 rounded-[12px] border-2 border-dashed border-white/70"
-                    aria-hidden
-                  />
-                  <canvas ref={canvasRef} className="hidden" aria-hidden />
-                </div>
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="min-h-11 w-full rounded-[12px] border border-[#E3E8EF] text-sm font-semibold text-[#5B6474] cs-focus"
-                >
-                  Cancel scan
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={startScan}
-                className="flex min-h-16 w-full items-center gap-3 rounded-[14px] bg-[#1A5FD6] px-4 text-left text-white cs-focus"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white/20">
-                  <IconScan />
-                </span>
-                <span>
-                  <span className="block text-base font-semibold">Scan standee QR</span>
-                  <span className="mt-0.5 block text-sm text-white/90">Point the camera at the standee</span>
-                </span>
-              </button>
-            )}
+            <StandeeQrScanner
+              key={scannerEpoch}
+              onScan={handleScannedRaw}
+              onError={(msg) => setScanError(msg)}
+            />
 
             {qrScanHint ? (
               <p className="mt-3 rounded-[12px] bg-amber-50 px-3 py-2 text-sm text-amber-950">{qrScanHint}</p>
