@@ -74,3 +74,37 @@ export async function counterSaleApi<T>(path: string, options: RequestOptions = 
 
   return payload.data;
 }
+
+/** Admin super-user token for counter-sale provision/search endpoints. */
+export async function counterSaleProvisionApi<T>(
+  path: string,
+  adminAccessToken: string | null,
+  options: RequestOptions = {},
+): Promise<T> {
+  const { method = 'GET', body } = options;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (adminAccessToken) headers.Authorization = `Bearer ${adminAccessToken}`;
+
+  const response = await fetch(`${BASE}${path}`, {
+    method,
+    headers,
+    credentials: 'include',
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  let payload: ApiSuccess<T> | ApiFailure | undefined;
+  try {
+    payload = (await response.json()) as ApiSuccess<T> | ApiFailure;
+  } catch {
+    payload = undefined;
+  }
+
+  if (!response.ok || !payload || payload.success === false) {
+    const message = payload && payload.success === false ? payload.error.message : response.statusText;
+    const code = payload && payload.success === false ? payload.error.code : 'REQUEST_FAILED';
+    throw new CounterSaleApiError(message, response.status, code);
+  }
+
+  return payload.data;
+}

@@ -71,6 +71,7 @@ export function CounterSaleLinkPage() {
   const placeDone = Boolean(selectedPlaceId);
   const serviceSelected = Boolean(service);
   const canLink = qrDone && placeDone && serviceSelected && !busy;
+  const doneCount = (qrDone ? 1 : 0) + (placeDone ? 1 : 0) + (serviceSelected ? 1 : 0);
 
   const progressStates = deriveStepStates(qrDone, placeDone, serviceSelected);
 
@@ -185,8 +186,10 @@ export function CounterSaleLinkPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 overflow-y-auto px-4 pb-4 pt-5">
-        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Link standee</h1>
-        <p className="mt-2 text-base text-[#5B6474]">Scan the QR, pick the business, choose a service.</p>
+        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Link a standee</h1>
+        <p className="mt-2 text-base leading-relaxed text-[#5B6474]">
+          Scan the QR on the standee, match it to the Google Business profile, then pick QuickReview or QuickCommerce.
+        </p>
         <ProgressSteps states={progressStates} />
 
         {error ? (
@@ -271,7 +274,11 @@ export function CounterSaleLinkPage() {
         disabled={!canLink}
         busy={busy}
         onAction={() => void linkStandee()}
-        hint={!canLink ? 'Complete QR, business, and service to continue.' : undefined}
+        hint={
+          canLink
+            ? 'Ready — tap Link & activate.'
+            : `${doneCount} of 3 done · complete QR, business, and service.`
+        }
       />
     </div>
   );

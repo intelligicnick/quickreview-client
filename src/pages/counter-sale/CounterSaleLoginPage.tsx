@@ -64,7 +64,9 @@ export function CounterSaleLoginPage() {
     <div className="flex flex-1 flex-col px-4 py-5">
       <div>
         <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Sign in</h1>
-        <p className="mt-2 text-base text-[#5B6474]">Username and 5-digit PIN from your supervisor.</p>
+        <p className="mt-2 text-base text-[#5B6474]">
+          Solve the quick check, then enter your username and {COUNTER_SALE_PIN_LENGTH}-digit PIN.
+        </p>
       </div>
 
       {error ? (
@@ -94,7 +96,7 @@ export function CounterSaleLoginPage() {
         </label>
 
         <label className="block text-sm font-medium text-[#3A4352]">
-          5-digit PIN
+          {COUNTER_SALE_PIN_LENGTH}-digit PIN
           <input
             className="cs-field cs-mono mt-2 w-full py-3 text-center text-[22px] tracking-[0.45em]"
             value={pin}
