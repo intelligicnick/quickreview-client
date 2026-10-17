@@ -12,7 +12,6 @@ import {
   Store,
   Users,
   X,
-  Smartphone,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -46,7 +45,6 @@ const NAV_GROUPS = [
     items: [
       { to: '/admin/merchants', label: 'Merchants', icon: Users, end: false as const },
       { to: '/admin/locations', label: 'Locations', icon: MapPin, end: false as const },
-      { to: '/admin/counter-sale', label: 'Counter sale', icon: Smartphone, end: false as const },
     ],
   },
   {

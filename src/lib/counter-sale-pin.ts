@@ -1,15 +1,12 @@
-export const COUNTER_SALE_PIN_LENGTH = 3;
+export const COUNTER_SALE_PIN_LENGTH = 5;
 
-export const COUNTER_SALE_PIN_PATTERN = /^\d{3}$/;
+export const COUNTER_SALE_PIN_PATTERN = /^\d{5}$/;
 
 export function normalizeCounterSalePin(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, COUNTER_SALE_PIN_LENGTH);
 }
 
 export function randomCounterSalePin(): string {
-  return String(Math.floor(100 + Math.random() * 900));
+  return String(Math.floor(10000 + Math.random() * 90000));
 }
 
-export function newLoginCaptcha(): string {
-  return randomCounterSalePin();
-}

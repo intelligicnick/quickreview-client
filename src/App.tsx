@@ -15,7 +15,6 @@ import { AdminQrBatchesPage } from './pages/admin/AdminQrBatchesPage';
 import { AdminActivityPage } from './pages/admin/AdminActivityPage';
 import { AdminSubscriptionsPage } from './pages/admin/AdminSubscriptionsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminCounterSalePage } from './pages/admin/AdminCounterSalePage';
 import { BusinessDetailPage } from './pages/BusinessDetailPage';
 import { BusinessesPage } from './pages/BusinessesPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -215,7 +214,6 @@ export default function App() {
         <Route path="users" element={<Navigate to="/admin/merchants" replace />} />
         <Route path="users/:userId" element={<AdminMerchantRedirect />} />
         <Route path="locations" element={<AdminLocationsPage />} />
-        <Route path="counter-sale" element={<AdminCounterSalePage />} />
         <Route path="payments" element={<AdminSubscriptionsPage />} />
         <Route path="subscriptions" element={<Navigate to="/admin/payments" replace />} />
         <Route path="qr" element={<AdminQrBatchesPage />} />

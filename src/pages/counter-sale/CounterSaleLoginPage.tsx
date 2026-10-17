@@ -1,19 +1,25 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ThreeDigitCaptcha } from '../../components/counter-sale/ThreeDigitCaptcha';
+import { MathCaptcha } from '../../components/counter-sale/MathCaptcha';
+import { newMathCaptcha } from '../../lib/login-math-captcha';
 import {
   COUNTER_SALE_PIN_LENGTH,
-  newLoginCaptcha,
+  COUNTER_SALE_PIN_PATTERN,
   normalizeCounterSalePin,
 } from '../../lib/counter-sale-pin';
-import { counterSaleApi, CounterSaleApiError, getCounterSaleToken, setCounterSaleToken } from '../../lib/counter-sale-api';
+import {
+  counterSaleApi,
+  CounterSaleApiError,
+  getCounterSaleToken,
+  setCounterSaleToken,
+} from '../../lib/counter-sale-api';
 
 export function CounterSaleLoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
-  const [captchaCode, setCaptchaCode] = useState(() => newLoginCaptcha());
-  const [captchaInput, setCaptchaInput] = useState('');
+  const [captcha, setCaptcha] = useState(() => newMathCaptcha());
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,19 +27,19 @@ export function CounterSaleLoginPage() {
     return <Navigate to="/counter-sale/link" replace />;
   }
 
-  const captchaOk = captchaInput === captchaCode;
-  const pinOk = pin.length === COUNTER_SALE_PIN_LENGTH;
+  const captchaOk = captchaAnswer === captcha.answer;
+  const pinOk = COUNTER_SALE_PIN_PATTERN.test(pin);
   const canSubmit = captchaOk && pinOk && username.trim().length >= 3 && !busy;
 
   function refreshCaptcha() {
-    setCaptchaCode(newLoginCaptcha());
-    setCaptchaInput('');
+    setCaptcha(newMathCaptcha());
+    setCaptchaAnswer('');
   }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!captchaOk) {
-      setError('Enter the 3-digit security check shown above.');
+      setError('Solve the addition puzzle correctly.');
       refreshCaptcha();
       return;
     }
@@ -58,7 +64,7 @@ export function CounterSaleLoginPage() {
     <div className="flex flex-1 flex-col px-4 py-5">
       <div>
         <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0F172A]">Sign in</h1>
-        <p className="mt-2 text-base text-[#5B6474]">Username and 3-digit code from your supervisor.</p>
+        <p className="mt-2 text-base text-[#5B6474]">Username and 5-digit PIN from your supervisor.</p>
       </div>
 
       {error ? (
@@ -68,10 +74,10 @@ export function CounterSaleLoginPage() {
       ) : null}
 
       <form onSubmit={onSubmit} className="mt-5 space-y-5 rounded-[18px] border border-[#E3E8EF] bg-white p-4">
-        <ThreeDigitCaptcha
-          code={captchaCode}
-          value={captchaInput}
-          onChange={setCaptchaInput}
+        <MathCaptcha
+          challenge={captcha}
+          value={captchaAnswer}
+          onChange={setCaptchaAnswer}
           onRefresh={refreshCaptcha}
         />
 
@@ -88,14 +94,14 @@ export function CounterSaleLoginPage() {
         </label>
 
         <label className="block text-sm font-medium text-[#3A4352]">
-          3-digit agent code
+          5-digit PIN
           <input
             className="cs-field cs-mono mt-2 w-full py-3 text-center text-[22px] tracking-[0.45em]"
             value={pin}
             onChange={(e) => setPin(normalizeCounterSalePin(e.target.value))}
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="\d{3}"
+            pattern="\d{5}"
             maxLength={COUNTER_SALE_PIN_LENGTH}
             required
           />
@@ -108,7 +114,7 @@ export function CounterSaleLoginPage() {
             canSubmit ? 'bg-[#1A5FD6] text-white' : 'cursor-not-allowed bg-[#E3E8EF] text-[#5B6474]'
           }`}
         >
-          Continue
+          {busy ? 'Signing in…' : 'Continue'}
         </button>
       </form>
     </div>
