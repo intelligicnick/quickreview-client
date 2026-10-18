@@ -79,9 +79,6 @@ export function CatalogCategoryPills({
           </button>
         </div>
       ) : null}
-      {categories.length > 1 ? (
-        <p className="text-xs text-muted">Drag a tab to reorder categories — coming soon.</p>
-      ) : null}
     </div>
   );
 }

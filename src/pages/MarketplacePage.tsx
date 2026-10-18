@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, ShoppingBag } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
+import { PageHeader } from '../components/PageHeader';
+import { Segmented } from '../components/ui/Segmented';
+import { StatusPill } from '../components/ui/StatusPill';
 import { MarketplaceProductPhoto } from '../components/marketplace/MarketplaceProductPhoto';
 import { marketplaceDimensionBadge } from '../lib/marketplace-image';
 import { useLocationContext } from '../lib/location-context';
@@ -205,20 +208,15 @@ export function MarketplacePage() {
     setDesignName(product.name);
   }
 
+  const pendingOrder = hub?.orders.find((o) => o.pendingPaymentId || o.status === 'PLACED');
+
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-          <ShoppingBag className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Marketplace</h1>
-          <p className="text-sm text-muted">
-            Physical QR standees and cards — fulfilled by QuickReview for{' '}
-            {selected ? selected.name : 'your location'}.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb="This location / Marketplace"
+        title="Marketplace"
+        description={`Printed standees and NFC cards for ${selected ? selected.name : 'your location'}.`}
+      />
 
       {!selected ? (
         <p className="mt-6 text-sm text-muted">Select a location to browse hardware and track orders.</p>
@@ -234,33 +232,33 @@ export function MarketplacePage() {
 
       {selected && hub ? (
         <>
-          <section className="mt-8">
-            <h2 className="font-bold">Catalog</h2>
+          {pendingOrder ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-amber-line bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p>
+                <span className="font-semibold">{pendingOrder.productName ?? pendingOrder.designName}</span>
+                {' · '}Qty {pendingOrder.quantity} · ₹{pendingOrder.amountInr.toLocaleString('en-IN')}
+              </p>
+              <StatusPill variant="pending" label="Payment pending confirmation" />
+            </div>
+          ) : null}
+          <section>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-[17px] font-bold text-ink">Catalog</h2>
+              {filterOptions.length > 1 ? (
+                <Segmented
+                  aria-label="Product category"
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={filterOptions.map((o) => ({
+                    id: o.id,
+                    label: `${o.name} · ${o.count}`,
+                  }))}
+                />
+              ) : null}
+            </div>
             <p className="mt-1 text-sm text-muted">
               QR codes link to your live review, commerce, or connect pages for {hub.businessName}.
             </p>
-            {filterOptions.length > 1 ? (
-              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
-                {filterOptions.map((option) => {
-                  const active = categoryFilter === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setCategoryFilter(option.id)}
-                      className={`min-h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors ${
-                        active
-                          ? 'border-brand bg-brand text-white'
-                          : 'border-line bg-white text-ink hover:border-brand/40'
-                      }`}
-                    >
-                      {option.name}
-                      <span className={active ? 'text-white/80' : 'text-muted'}> ({option.count})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
             {visibleSections.length === 0 ? (
               <p className="mt-4 text-sm text-muted">No products listed yet.</p>
             ) : (

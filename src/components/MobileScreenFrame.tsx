@@ -46,7 +46,7 @@ export function MobileScreenFrame({
   children,
   className = '',
   screenClassName = '',
-  hideNotch = false,
+  hideNotch = true,
   hideStatusBar,
   compact = false,
 }: Props) {

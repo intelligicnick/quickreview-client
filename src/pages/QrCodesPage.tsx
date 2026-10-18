@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { QrCodePreview } from '../components/QrCodePreview';
-import { QrProductCard } from '../components/QrProductCard';
+import { QRCard } from '../components/ui/QRCard';
+import { Button } from '../components/ui/Button';
 import { api, ApiError } from '../lib/api';
-import { loadWorkspaceSnapshot, productStatusLabel } from '../lib/location-workspace';
+import { loadWorkspaceSnapshot } from '../lib/location-workspace';
 import { useLocationContext } from '../lib/location-context';
 
 export function QrCodesPage() {
@@ -79,7 +79,7 @@ export function QrCodesPage() {
   return (
     <div>
       <PageHeader
-        icon={QrCode}
+        breadcrumb="This location / QR codes & standees"
         title="QR codes & standees"
         description={
           selected
@@ -88,12 +88,9 @@ export function QrCodesPage() {
         }
         actions={
           selected ? (
-            <Link
-              to="/app/marketplace"
-              className="inline-flex min-h-10 items-center rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:border-brand/40"
-            >
-              Order standee
-            </Link>
+            <Button variant="secondary" size="sm" type="button" onClick={() => window.print()}>
+              Download all (PDF)
+            </Button>
           ) : undefined
         }
       />
@@ -115,39 +112,36 @@ export function QrCodesPage() {
 
       {selected && snapshot ? (
         <>
-          <div className="mt-8 flex flex-wrap items-stretch justify-start gap-4">
+          <div className="mt-8 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
             {review ? (
-              <QrProductCard
+              <QRCard
                 title="QuickReview"
-                purpose="Star ratings & Google reviews"
+                subtitle="Star ratings & Google reviews"
                 publicUrl={review.publicUrl}
                 publicPath={review.publicPath}
                 unlocked={review.reviewUnlocked}
-                statusLabel={productStatusLabel(review.reviewUnlocked, review.reviewAccess.status)}
                 manageHref="/app/quickreview"
                 manageLabel="Reviews & inbox"
               />
             ) : null}
             {menu ? (
-              <QrProductCard
-                title="Quick Commerce"
-                purpose="Catalogue + Quick Revisit (one scan)"
+              <QRCard
+                title="QuickCommerce"
+                subtitle="Catalogue + Quick Revisit"
                 publicUrl={menu.publicUrl}
                 publicPath={menu.publicPath}
                 unlocked={menu.menuUnlocked}
-                statusLabel={productStatusLabel(menu.menuUnlocked, menu.menuAccess.status)}
-                manageHref="/app/quickmenu"
+                manageHref="/app/quickcommerce"
                 manageLabel="Edit catalogue"
               />
             ) : null}
             {connect ? (
-              <QrProductCard
+              <QRCard
                 title="QuickConnect"
-                purpose="Digital business card"
+                subtitle="Digital business card"
                 publicUrl={connect.publicUrl}
                 publicPath={connect.publicPath}
                 unlocked={connect.connectUnlocked}
-                statusLabel={productStatusLabel(connect.connectUnlocked, connect.connectAccess.status)}
                 manageHref="/app/quickconnect"
                 manageLabel="Edit card"
               />
@@ -193,9 +187,9 @@ export function QrCodesPage() {
                 value={standeeKind}
                 onChange={(e) => setStandeeKind(e.target.value as 'review' | 'menu' | 'revisit')}
               >
-                <option value="review">Review QR</option>
-                <option value="menu">Commerce + Revisit QR</option>
-                <option value="revisit">Revisit only QR</option>
+                <option value="review">Review page</option>
+                <option value="menu">Catalogue + Quick Revisit</option>
+                <option value="revisit">Quick Revisit only</option>
               </select>
               <button
                 type="button"
@@ -206,13 +200,18 @@ export function QrCodesPage() {
               </button>
             </div>
             {standeeMsg ? <p className="mt-2 text-xs text-brand-dark">{standeeMsg}</p> : null}
-            <p className="mt-3 text-xs text-muted">
-              Need new hardware?{' '}
-              <Link to="/app/marketplace" className="font-semibold text-brand">
-                Order from Marketplace
-              </Link>
-            </p>
           </div>
+
+          <Link
+            to="/app/marketplace"
+            className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-line bg-white p-5 hover:border-brand/30"
+          >
+            <div>
+              <p className="font-semibold text-ink">Need printed standees or NFC cards?</p>
+              <p className="mt-0.5 text-sm text-muted">Order hardware from the Marketplace →</p>
+            </div>
+            <span className="text-brand" aria-hidden>→</span>
+          </Link>
         </>
       ) : null}
     </div>

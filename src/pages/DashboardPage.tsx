@@ -7,9 +7,11 @@ import {
   Palette,
   ScanLine,
   Star,
-  UtensilsCrossed,
+  ShoppingBag,
   Users,
 } from 'lucide-react';
+import { deriveProductPlanStatus } from '../lib/product-access';
+import { StatTile } from '../components/ui/StatTile';
 import { GoogleImportPanel } from '../components/GoogleImportPanel';
 import { PageHeader } from '../components/PageHeader';
 import { ProductStatusBadge } from '../components/ProductStatusBadge';
@@ -62,7 +64,20 @@ export function DashboardPage() {
       { key: 'scan', name: 'QuickScan', access: billing.quickScan },
     ];
     for (const p of products) {
-      if (p.access.status === 'PENDING_PAYMENT') {
+      const plan = deriveProductPlanStatus({
+        unlocked: p.access.unlocked,
+        status: p.access.status,
+        endDate: null,
+      });
+      if (plan === 'EXPIRED') {
+        items.push({
+          id: `exp-${p.key}`,
+          title: `${p.name} plan expired`,
+          detail: 'Renew to keep QR codes and public pages live.',
+          href: '/app/subscription',
+          action: 'Renew plan',
+        });
+      } else if (p.access.status === 'PENDING_PAYMENT') {
         items.push({
           id: `pay-${p.key}`,
           title: `${p.name} — payment awaiting confirmation`,
@@ -70,7 +85,7 @@ export function DashboardPage() {
           href: '/app/subscription',
           action: 'View billing',
         });
-      } else if (!p.access.unlocked && p.access.status !== 'PENDING_PAYMENT') {
+      } else if (!p.access.unlocked && plan === 'NONE') {
         items.push({
           id: `plan-${p.key}`,
           title: `${p.name} needs an active plan`,
@@ -122,7 +137,7 @@ export function DashboardPage() {
       },
       {
         title: 'QuickCommerce',
-        icon: UtensilsCrossed,
+        icon: ShoppingBag,
         href: '/app/quickcommerce',
         unlocked: billing.quickMenu.unlocked,
         status: billing.quickMenu.status,
@@ -166,6 +181,7 @@ export function DashboardPage() {
   return (
     <div>
       <PageHeader
+        breadcrumb="Home / Dashboard"
         title="Dashboard"
         description={
           selected
@@ -252,10 +268,7 @@ export function DashboardPage() {
               { label: 'Private feedback', value: review.stats.privateFeedback, hint: 'Low-rating messages in inbox' },
               { label: 'Google opens', value: review.stats.googleOpens, hint: 'Taps through to Google' },
             ].map((card) => (
-              <div key={card.label} className="rounded-2xl border border-line bg-white p-4" title={card.hint}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{card.label}</p>
-                <p className="mt-2 text-2xl font-extrabold">{card.value}</p>
-              </div>
+              <StatTile key={card.label} label={card.label} value={card.value.toLocaleString('en-IN')} helper={card.hint} />
             ))}
           </div>
         </section>

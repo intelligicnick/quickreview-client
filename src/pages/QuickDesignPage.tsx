@@ -22,6 +22,9 @@ import {
   type PosterOverlayTheme,
 } from '../lib/design-poster-overlay';
 import { useLocationContext } from '../lib/location-context';
+import { PageHeader } from '../components/PageHeader';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Button } from '../components/ui/Button';
 import type { Location } from '../lib/types';
 
 type PictureMode = 'photos' | 'design';
@@ -841,13 +844,28 @@ export function QuickDesignPage() {
 
   const unlocked = hub?.designUnlocked ?? false;
   const quota = hub?.quota;
+  const monthlyLeft = quota ? quota.monthlyLimit - quota.monthlyUsed : 0;
+  const dailyLeft = quota ? quota.dailyLimit - quota.dailyUsed : 0;
+  const canDownload = Boolean(previewPosterId) || (hub?.posters.length ?? 0) > 0;
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-extrabold tracking-tight">QuickDesign</h1>
-      <p className="mt-1 text-sm text-muted">
-        Pick a mood and offer — photo or graphic backgrounds with your headline, offer, and contact details on top.
-      </p>
+      <PageHeader
+        breadcrumb="Get customers / QuickDesign"
+        title="QuickDesign"
+        description="Pick a mood and offer — photo or graphic backgrounds with your headline, offer, and contact details on top."
+        actions={
+          quota ? (
+            <div className="w-full max-w-xs space-y-1.5 text-right sm:w-56">
+              <p className="text-xs font-semibold text-muted">
+                Designs this month · {monthlyLeft} of {quota.monthlyLimit} left
+              </p>
+              <ProgressBar value={monthlyLeft} max={quota.monthlyLimit} barClassName="bg-brand" />
+              <p className="text-xs text-muted">{dailyLeft} of {quota.dailyLimit} left today</p>
+            </div>
+          ) : undefined
+        }
+      />
 
       {!selected ? (
         <p className="mt-6 text-sm text-muted">Select a location to design posters.</p>
@@ -933,20 +951,6 @@ export function QuickDesignPage() {
                   </button>
                 </div>
               </div>
-              <label className="mt-4 block">
-                <span className="text-xs font-semibold text-muted">Generate size</span>
-                <select
-                  className={fieldClass}
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value as ExportAspect)}
-                >
-                  {aspectOptions.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.label} — {row.channel}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </section>
 
             <section>
@@ -1124,90 +1128,26 @@ export function QuickDesignPage() {
             {generateStatus ? (
               <p className="text-center text-sm font-medium text-brand">{generateStatus}</p>
             ) : null}
-            {unlocked ? (
-              <button
-                type="button"
-                disabled={busy || !canGenerate}
-                onClick={() => void generate()}
-                className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Generate design ({aspectRatio})
-              </button>
-            ) : (
-              <Link
-                to="/app/subscription"
-                className="flex w-full min-h-12 items-center justify-center rounded-xl bg-brand px-4 text-sm font-semibold text-white"
-              >
-                Select a plan to unlock QuickDesign
-              </Link>
-            )}
-            {quota ? (
-              <p className="text-center text-xs text-muted">
-                {quota.monthlyLimit - quota.monthlyUsed} of {quota.monthlyLimit} left this month ·{' '}
-                {quota.dailyLimit - quota.dailyUsed} of {quota.dailyLimit} today
-              </p>
-            ) : null}
-
-            <section className="border-t border-line pt-6">
-              <p className="text-sm font-semibold">History</p>
-              {hub.posters.length === 0 ? (
-                <p className="mt-2 text-sm text-muted">No stories yet. Generate your first poster.</p>
-              ) : (
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {hub.posters.map((poster) => (
-                    <li key={poster.id} className="rounded-xl border border-line p-2">
-                      <button
-                        type="button"
-                        className="w-full text-left"
-                        onClick={() => setPreviewPosterId(poster.id)}
-                      >
-                        {previewUrls[poster.id] ? (
-                          <img
-                            src={previewUrls[poster.id]}
-                            alt=""
-                            className="mx-auto max-h-40 w-auto rounded-lg"
-                          />
-                        ) : (
-                          <div className="flex h-32 items-center justify-center rounded-lg bg-paper text-xs text-muted">
-                            Loading…
-                          </div>
-                        )}
-                        <p className="mt-1 text-xs font-semibold uppercase text-muted">
-                          {poster.template} · {poster.pictureMode}
-                        </p>
-                      </button>
-                      <div className="mt-2 flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => void downloadPoster(poster.id, '9:16')}
-                          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line py-1.5 text-xs font-semibold"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void sharePoster(poster.id)}
-                          className="inline-flex items-center justify-center rounded-lg border border-line px-2 py-1.5 text-xs font-semibold"
-                          aria-label="Share"
-                        >
-                          <Share2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void removePoster(poster.id)}
-                          className="inline-flex items-center justify-center rounded-lg border border-line px-2 py-1.5 text-xs font-semibold text-red-700"
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </li>
+            <div className="flex flex-wrap items-end gap-3 border-t border-line pt-6">
+              <label className="min-w-[10rem] flex-1 text-sm">
+                <span className="font-semibold">Size</span>
+                <select className={`${fieldClass} mt-1`} value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as ExportAspect)}>
+                  {aspectOptions.map((row) => (
+                    <option key={row.id} value={row.id}>{row.label}</option>
                   ))}
-                </ul>
+                </select>
+              </label>
+              {unlocked ? (
+                <Button type="button" disabled={busy || !canGenerate} className="min-w-[12rem] flex-1" onClick={() => void generate()}>
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generate design
+                </Button>
+              ) : (
+                <Link to="/app/subscription" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[10px] bg-brand text-sm font-semibold text-white">
+                  Select a plan
+                </Link>
               )}
-            </section>
+            </div>
             </div>
           </div>
 
@@ -1225,12 +1165,15 @@ export function QuickDesignPage() {
             />
             <div className="mt-3 space-y-2">
               <p className="text-center text-xs font-semibold text-muted">Download as</p>
+              {!canDownload ? (
+                <p className="text-center text-xs text-muted">Download and share unlock after you generate.</p>
+              ) : null}
               <div className="flex flex-wrap justify-center gap-2">
                 {(['9:16', '1:1', '4:5'] as const).map((ratio) => (
                   <button
                     key={ratio}
                     type="button"
-                    disabled={!previewPosterId || busy}
+                    disabled={!canDownload || busy}
                     onClick={() => previewPosterId && void downloadPoster(previewPosterId, ratio)}
                     className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 rounded-xl border border-line bg-white px-2 text-xs font-semibold disabled:opacity-40 sm:text-sm"
                   >
@@ -1280,6 +1223,34 @@ export function QuickDesignPage() {
                 Back to live preview
               </button>
             ) : null}
+            <section className="mt-6 rounded-2xl border border-line bg-white p-4">
+              <p className="text-sm font-semibold text-ink">History</p>
+              {hub.posters.length === 0 ? (
+                <p className="mt-2 text-xs text-muted">No designs yet.</p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {hub.posters.slice(0, 4).map((poster) => (
+                    <li key={poster.id} className="flex gap-1">
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 rounded-lg border border-line px-2 py-1.5 text-left text-xs font-semibold hover:bg-surface-2"
+                        onClick={() => setPreviewPosterId(poster.id)}
+                      >
+                        {poster.template} · {new Date(poster.createdAt).toLocaleDateString('en-IN')}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete design"
+                        className="rounded-lg border border-line px-2 text-red-700"
+                        onClick={() => void removePoster(poster.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </div>
       ) : null}

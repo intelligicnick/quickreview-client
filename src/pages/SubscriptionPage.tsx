@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CreditCard } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
+import { PageHeader } from '../components/PageHeader';
 import { ProductStatusBadge } from '../components/ProductStatusBadge';
-import { formatPlanEnd } from '../lib/format-plan-date';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { deriveProductPlanStatus, formatMerchantDate } from '../lib/product-access';
 import { useLocationContext } from '../lib/location-context';
 import { openRazorpayCheckout } from '../lib/razorpay-checkout';
 
@@ -111,6 +113,16 @@ export function SubscriptionPage() {
     setPayMethod(trial && plansForKey.length === 1 ? 'TRIAL' : 'RAZORPAY');
   }, [checkoutKey, plansForKey]);
 
+  const expiredRows = useMemo(() => {
+    if (!billing) return [];
+    return PRODUCT_ROWS.filter((row) => deriveProductPlanStatus(billing.products[row.key]) === 'EXPIRED');
+  }, [billing]);
+
+  const renewAllInr = useMemo(() => {
+    if (!billing) return 0;
+    return expiredRows.reduce((sum, row) => sum + (billing.products[row.key].amountInr ?? 0), 0);
+  }, [billing, expiredRows]);
+
   async function runCheckout() {
     if (!selected || !selectedPlan) return;
     setBusy(true);
@@ -148,74 +160,81 @@ export function SubscriptionPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-          <CreditCard className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Plans & billing</h1>
-          <p className="text-sm text-muted">One status per product for this location — pick a plan when you&apos;re ready.</p>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb="This location / Plans & billing"
+        title="Plans & billing"
+        description="One status per product for this location — renew or upgrade when you're ready."
+      />
 
-      {!selected ? (
-        <p className="mt-4 text-sm text-muted">Select a location at the top to manage billing.</p>
-      ) : (
-        <p className="mt-4 text-sm">
-          Billing for <span className="font-semibold">{selected.name}</span>
-        </p>
-      )}
+      {!selected ? <p className="text-sm text-muted">Select a location in the sidebar to manage billing.</p> : null}
 
       {message ? (
-        <p className="mt-4 rounded-xl bg-brand/10 px-3 py-2 text-sm text-brand-dark">{message}</p>
+        <p className="rounded-xl bg-brand/10 px-3 py-2 text-sm text-brand-dark">{message}</p>
       ) : null}
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+
+      {selected && billing && expiredRows.length > 0 ? (
+        <div className="rounded-[10px] border border-amber-line bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-semibold">
+            All {expiredRows.length} product{expiredRows.length === 1 ? '' : 's'} expired
+            {expiredRows[0] ? ` on ${formatMerchantDate(billing.products[expiredRows[0].key].endDate)}` : ''}.
+          </p>
+          <button
+            type="button"
+            className="mt-2 font-semibold underline"
+            onClick={() => setCheckoutKey(expiredRows[0].key)}
+          >
+            Renew all · ₹{renewAllInr.toLocaleString('en-IN')}
+          </button>
+        </div>
+      ) : null}
 
       {selected && billing ? (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line bg-paper/80 text-xs font-bold uppercase tracking-wide text-muted">
+        <div className="overflow-x-auto rounded-2xl border border-line bg-white">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3">Product</th>
-                <th className="hidden px-4 py-3 sm:table-cell">Status</th>
-                <th className="hidden px-4 py-3 md:table-cell">Renewal</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Valid until</th>
                 <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {PRODUCT_ROWS.map((row) => {
                 const product = billing.products[row.key];
-                const renewal = formatPlanEnd(product.endDate);
+                const planStatus = deriveProductPlanStatus(product);
+                const validUntil = formatMerchantDate(product.endDate);
                 return (
                   <tr key={row.key} className="border-b border-line last:border-0">
                     <td className="px-4 py-4">
                       <p className="font-semibold">{row.name}</p>
                       <p className="mt-0.5 text-xs text-muted">{row.blurb}</p>
-                      <div className="mt-2 sm:hidden">
-                        <ProductStatusBadge unlocked={product.unlocked} status={product.status} />
-                        {renewal ? <p className="mt-1 text-xs text-muted">{renewal}</p> : null}
-                      </div>
                     </td>
-                    <td className="hidden px-4 py-4 sm:table-cell">
-                      <ProductStatusBadge unlocked={product.unlocked} status={product.status} />
+                    <td className="px-4 py-4">
+                      <ProductStatusBadge
+                        unlocked={product.unlocked}
+                        status={product.status}
+                        endDate={product.endDate}
+                        pendingPaymentId={product.pendingPaymentId}
+                      />
                     </td>
-                    <td className="hidden px-4 py-4 text-muted md:table-cell">
-                      {renewal ?? (product.planName ? product.planName : '—')}
-                    </td>
+                    <td className="px-4 py-4 text-muted">{validUntil}</td>
                     <td className="px-4 py-4 text-right">
-                      {product.unlocked ? (
-                        <span className="text-muted">Active</span>
-                      ) : product.status === 'PENDING_PAYMENT' ? (
-                        <span className="text-amber-800">Awaiting confirmation</span>
+                      {planStatus === 'EXPIRED' ? (
+                        <Button size="sm" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
+                          Renew
+                        </Button>
+                      ) : planStatus === 'PENDING_PAYMENT' ? (
+                        <span className="text-sm font-semibold text-amber-800">Awaiting confirmation</span>
+                      ) : planStatus === 'ACTIVE' || planStatus === 'TRIAL' ? (
+                        <Button variant="secondary" size="sm" onClick={() => setCheckoutKey(row.key)}>
+                          Manage
+                        </Button>
                       ) : (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setCheckoutKey(row.key)}
-                          className="inline-flex min-h-10 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-                        >
+                        <Button size="sm" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
                           Choose plan
-                        </button>
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -292,8 +311,23 @@ export function SubscriptionPage() {
         </div>
       ) : null}
 
-      <p className="mt-8 text-xs text-muted">
-        Razorpay activates automatically via webhook. UPI/cash stays pending until Super Admin marks it paid.
+      {selected && billing ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <h2 className="text-[17px] font-bold text-ink">Razorpay</h2>
+            <p className="mt-1 text-sm text-muted">Card, UPI, and netbanking — your plan activates instantly after payment.</p>
+          </Card>
+          <Card>
+            <h2 className="text-[17px] font-bold text-ink">UPI or cash</h2>
+            <p className="mt-1 text-sm text-muted">
+              Pay offline and we&apos;ll confirm manually. Access stays pending until payment is verified.
+            </p>
+          </Card>
+        </div>
+      ) : null}
+
+      <p className="text-xs text-muted">
+        Razorpay activates automatically via webhook. UPI and cash stay pending until our team confirms payment.
       </p>
     </div>
   );

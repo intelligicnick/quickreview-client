@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Repeat } from 'lucide-react';
+import { Repeat, Star } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 import { BrandMark } from '../../components/BrandMark';
 import { MenuCatalogBanner } from '../../components/menu/MenuCatalogBanner';
@@ -17,11 +17,17 @@ import {
 
 type PublicMenu = {
   quickRevisitPath?: string | null;
+  catalogBannerUrl?: string | null;
   locationName: string;
   address: string | null;
   phone: string | null;
   presentation?: string;
-  copy: { pageTitle: string; showVegBadge: boolean; guestBrowse?: boolean };
+  copy: {
+    pageTitle: string;
+    showVegBadge: boolean;
+    guestBrowse?: boolean;
+    featuredTabLabel?: string;
+  };
   imagePlaceholder?: MenuImagePlaceholder;
   priceVariantScope?: 'category' | 'product';
   categories: Array<{
@@ -36,6 +42,7 @@ type PublicMenu = {
         imageUrl?: string | null;
         imageUrls?: string[];
         isNonVeg: boolean;
+        isFeatured?: boolean;
       }
     >;
   }>;
@@ -76,6 +83,22 @@ export function MenuPage() {
     if (!menu.copy.guestBrowse) return menu.categories;
     return filterMenuCatalog(menu.categories, search, categoryId);
   }, [menu, search, categoryId]);
+
+  const featuredItems = useMemo(() => {
+    if (!menu) return [];
+    const rows: {
+      item: PublicMenu['categories'][number]['items'][number];
+      category: PublicMenu['categories'][number];
+    }[] = [];
+    for (const category of menu.categories) {
+      for (const item of category.items) {
+        if (item.isFeatured) rows.push({ item, category });
+      }
+    }
+    return rows;
+  }, [menu]);
+
+  const featuredTabLabel = menu?.copy.featuredTabLabel ?? "Today's Special";
 
   if (locked) {
     return (
@@ -121,6 +144,7 @@ export function MenuPage() {
         locationName={menu.locationName}
         address={menu.address}
         phone={menu.phone}
+        bannerImageUrl={menu.catalogBannerUrl}
       />
 
       <main className="mx-auto max-w-lg px-4 pt-4">
@@ -135,6 +159,53 @@ export function MenuPage() {
         ) : null}
 
         <div className="mt-8 space-y-8">
+          {featuredItems.length > 0 ? (
+            <section>
+              <h2 className="flex items-center gap-2 border-b border-line pb-2 text-lg font-bold">
+                <Star className="h-5 w-5 text-brand" aria-hidden />
+                {featuredTabLabel}
+              </h2>
+              <ul className="mt-3 space-y-4">
+                {featuredItems.map(({ item, category }) => {
+                  const variants = itemPriceVariants(
+                    item,
+                    category.priceVariants ?? [],
+                    categoryScoped ?? false,
+                  );
+                  const price = formatMenuItemPrice(item);
+                  const detail =
+                    variants.length > 1 && item.variantPrices?.length
+                      ? formatMenuItemPriceDetail(item, variants)
+                      : null;
+                  return (
+                    <li key={item.id} className="flex gap-3 rounded-2xl bg-brand/5 p-3">
+                      <MenuItemImageCarousel
+                        imageUrls={item.imageUrls}
+                        imageUrl={item.imageUrl}
+                        alt={item.name}
+                        placeholder={menu.imagePlaceholder ?? 'retail'}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="min-w-0 font-semibold">{item.name}</p>
+                          {price !== '—' ? (
+                            <p className="shrink-0 text-right font-semibold tabular-nums whitespace-nowrap">
+                              {price}
+                            </p>
+                          ) : null}
+                        </div>
+                        {item.description ? (
+                          <p className="mt-1 text-sm text-muted">{item.description}</p>
+                        ) : null}
+                        {detail ? <p className="mt-1 text-xs text-muted">{detail}</p> : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
+
           {visibleCategories.map((category) => (
             <section key={category.id}>
               <h2 className="border-b border-line pb-2 text-lg font-bold">{category.name}</h2>

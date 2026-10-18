@@ -1,0 +1,38 @@
+:root {
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --ink: #0f172a;
+  --body: #334155;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line-soft: #eef2f7;
+  --ground: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+
+  --blue: #1660f5;
+  --blue-700: #1048c4;
+  --blue-50: #eaf1ff;
+
+  --green-700: #046c4e;
+  --green-50: #e7f6ef;
+
+  --red-700: #a3200f;
+  --red-50: #fdecea;
+
+  --amber-800: #8a3b06;
+  --amber-50: #fff4e5;
+  --amber-line: #fbd9a8;
+
+  --orange: #ea7a1a;
+  --star: #f5a524;
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --focus-ring: 2px solid var(--blue);
+  --focus-offset: 2px;
+}

@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, MoreVertical, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { Lock, Plus, Trash2 } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { CommerceSectionSwitch } from '../components/quickcommerce/CommerceSectionSwitch';
 import type { MenuImagePlaceholder } from '../components/menu/MenuItemImageCarousel';
 import { MenuGuestPreview } from '../components/menu/MenuGuestPreview';
 import { MenuItemPhotoUpload } from '../components/quickcommerce/MenuItemPhotoUpload';
 import { CatalogCategoryPills } from '../components/quickcommerce/CatalogCategoryPills';
+import { CatalogActionMenu } from '../components/quickcommerce/CatalogActionMenu';
 import { CatalogItemCard } from '../components/quickcommerce/CatalogItemCard';
 import { CatalogWorkspaceTabs } from '../components/quickcommerce/CatalogWorkspaceTabs';
 import { CategoryPriceVariantsEditor } from '../components/quickcommerce/CategoryPriceVariantsEditor';
 import { ItemPriceVariantsEditor } from '../components/quickcommerce/ItemPriceVariantsEditor';
 import { MenuItemPriceInputs } from '../components/quickcommerce/MenuItemPriceInputs';
 import { CatalogBulkImport } from '../components/quickcommerce/CatalogBulkImport';
+import { CatalogBannerUpload } from '../components/quickcommerce/CatalogBannerUpload';
+import { CatalogOffersSection } from '../components/quickcommerce/CatalogOffersSection';
 import { QuickCommerceOnboarding } from '../components/quickcommerce/QuickCommerceOnboarding';
 import { QrProductCard } from '../components/QrProductCard';
 import { productStatusLabel } from '../lib/location-workspace';
@@ -20,6 +25,7 @@ import {
   formatMenuItemPrice,
   itemPriceOptionsFromDraft,
   itemPriceVariants,
+  menuItemVariantRows,
   parsePriceInput,
   type PriceVariant,
   type ProductOptionDraft,
@@ -35,6 +41,7 @@ type MenuItem = {
   imageUrls?: string[];
   isNonVeg: boolean;
   isAvailable: boolean;
+  isFeatured?: boolean;
   isMultiPriced?: boolean;
   displayPriceInr?: number | null;
   variantPrices?: { variantId: string; priceInr: number }[];
@@ -80,6 +87,8 @@ type MenuCopy = {
 
 type Hub = {
   slug: string;
+  address?: string | null;
+  phone?: string | null;
   menuMode: string;
   businessCategory: string | null;
   businessSubcategories: string[];
@@ -92,6 +101,7 @@ type Hub = {
   copy: MenuCopy;
   priceVariantScope: 'category' | 'product';
   imagePlaceholder: MenuImagePlaceholder;
+  catalogBannerUrl?: string | null;
   categories: MenuCategory[];
 };
 
@@ -159,15 +169,23 @@ export function QuickMenuPage() {
     );
   }, [hub]);
 
+  const featuredCount = useMemo(() => {
+    if (!hub) return 0;
+    return hub.categories.reduce(
+      (n, cat) => n + cat.items.filter((item) => item.isFeatured).length,
+      0,
+    );
+  }, [hub]);
+
   const workspaceTabs = useMemo(() => {
     const tabs = hub?.copy?.tabs;
     if (!tabs) return [];
-    return tabs.map((tab) =>
-      tab.id === 'unavailable'
-        ? { ...tab, label: `${tab.label} (${unavailableCount})` }
-        : tab,
-    );
-  }, [hub?.copy?.tabs, unavailableCount]);
+    return tabs.map((tab) => {
+      if (tab.id === 'unavailable') return { ...tab, label: `${tab.label} (${unavailableCount})` };
+      if (tab.id === 'featured') return { ...tab, label: `${tab.label} (${featuredCount})` };
+      return tab;
+    });
+  }, [hub?.copy?.tabs, unavailableCount, featuredCount]);
 
   async function reload() {
     if (!selected) return;
@@ -393,6 +411,20 @@ export function QuickMenuPage() {
     }
   }
 
+  async function toggleItemFeatured(itemId: string, next: boolean) {
+    if (!selected) return;
+    try {
+      await api(`/api/locations/${selected.id}/quickmenu/items/${itemId}`, {
+        method: 'PATCH',
+        body: { isFeatured: next },
+      });
+      await reload();
+      setMessage(next ? 'Added to offers' : 'Removed from offers');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not update offer');
+    }
+  }
+
   async function toggleItemAvailable(item: MenuItem, next: boolean) {
     if (!selected) return;
     try {
@@ -415,24 +447,55 @@ export function QuickMenuPage() {
   const featuredTabLabel =
     hub?.copy?.tabs.find((t) => t.id === 'featured')?.label ?? "Today's Special";
 
+  const offerRows = useMemo(() => {
+    if (!hub) return { featured: [], candidates: [] };
+    const featured: {
+      id: string;
+      name: string;
+      priceLabel: string;
+      categoryName: string;
+      imageUrls?: string[];
+      imageUrl?: string | null;
+    }[] = [];
+    const candidates: typeof featured = [];
+    for (const category of hub.categories) {
+      for (const item of category.items) {
+        const row = {
+          id: item.id,
+          name: item.name,
+          priceLabel: formatMenuItemPrice(item),
+          categoryName: category.name,
+          imageUrls: item.imageUrls,
+          imageUrl: item.imageUrl,
+        };
+        candidates.push(row);
+        if (item.isFeatured) featured.push(row);
+      }
+    }
+    return { featured, candidates };
+  }, [hub]);
+
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-          <ShoppingBag className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">
+      <PageHeader
+        breadcrumb="Sell & follow up / QuickCommerce"
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
             QuickCommerce
             {copy?.productName ? (
-              <span className="font-semibold text-muted"> · {copy.productName}</span>
+              <button
+                type="button"
+                onClick={() => setChangingCategory(true)}
+                className="inline-flex items-center rounded-full border border-line bg-white px-2.5 py-0.5 text-sm font-semibold text-muted hover:border-brand/40"
+              >
+                {copy.productName} · Change
+              </button>
             ) : null}
-          </h1>
-          <p className="text-sm text-muted">
-            {copy?.moduleSubtitle ?? 'Your digital catalogue'} — {selected ? selected.name : 'select a location'}.
-          </p>
-        </div>
-      </div>
+          </span>
+        }
+        description={`${copy?.moduleSubtitle ?? 'Your digital catalogue'} — ${selected ? selected.name : 'select a location'}.`}
+        actions={<CommerceSectionSwitch />}
+      />
 
       {!selected ? (
         <p className="mt-6 text-sm text-muted">Select a location at the top to edit your catalogue.</p>
@@ -534,6 +597,11 @@ export function QuickMenuPage() {
                     manageLabel="All QR codes"
                     unlockTo="/app/subscription"
                   />
+                  <CatalogBannerUpload
+                    locationId={selected.id}
+                    bannerUrl={hub.catalogBannerUrl ?? null}
+                    onUpdated={reload}
+                  />
                   <label className="mt-4 block rounded-2xl border border-line bg-white p-4 text-sm">
                     <span className="font-semibold">Custom slug</span>
                     <input
@@ -625,10 +693,23 @@ export function QuickMenuPage() {
                 />
               ) : null}
 
+              {workspaceTab === 'featured' ? (
+                <CatalogOffersSection
+                  featuredTabLabel={featuredTabLabel}
+                  itemLabel={copy.itemLabel}
+                  imagePlaceholder={imagePlaceholder}
+                  featured={offerRows.featured}
+                  candidates={offerRows.candidates}
+                  onAdd={(itemId) => void toggleItemFeatured(itemId, true)}
+                  onRemove={(itemId) => void toggleItemFeatured(itemId, false)}
+                />
+              ) : null}
+
               {workspaceTab !== 'primary' &&
               workspaceTab !== 'bundles' &&
               workspaceTab !== 'qr' &&
-              workspaceTab !== 'import' ? (
+              workspaceTab !== 'import' &&
+              workspaceTab !== 'featured' ? (
                 <div className="mt-6 rounded-2xl border border-dashed border-line bg-paper px-5 py-10 text-center">
                   <p className="font-semibold">{copy.tabs.find((t) => t.id === workspaceTab)?.label}</p>
                   <p className="mt-2 text-sm text-muted">This section is on the roadmap — your categories still work below.</p>
@@ -682,14 +763,24 @@ export function QuickMenuPage() {
                                   ? copy.itemLabel.toLowerCase()
                                   : copy.itemLabelPlural.toLowerCase()}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => void removeCategory(category.id)}
-                                className="rounded-lg p-2 text-muted hover:bg-red-50 hover:text-red-700"
-                                aria-label={`Delete ${category.name}`}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </button>
+                              <CatalogActionMenu
+                                ariaLabel={`Actions for ${category.name}`}
+                                actions={[
+                                  {
+                                    label: 'Delete category',
+                                    danger: true,
+                                    onClick: () => {
+                                      if (
+                                        window.confirm(
+                                          `Delete "${category.name}" and all its ${copy.itemLabelPlural.toLowerCase()}?`,
+                                        )
+                                      ) {
+                                        void removeCategory(category.id);
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
                             </div>
                           </div>
 
@@ -703,7 +794,19 @@ export function QuickMenuPage() {
                             />
                           ) : null}
 
-                          <ul className="mt-4 space-y-3">
+                          <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white">
+                            <div className="hidden gap-3 border-b border-line bg-surface-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid sm:grid-cols-[minmax(0,1fr)_8rem_7rem_5rem]">
+                              <span>Product</span>
+                              <span>Price range</span>
+                              <span>On menu</span>
+                              <span className="text-right">Actions</span>
+                            </div>
+                          <ul className="divide-y divide-line">
+                            {category.items.length === 0 ? (
+                              <li className="px-4 py-10 text-center text-sm text-muted">
+                                No products in this category yet — add one below.
+                              </li>
+                            ) : null}
                             {category.items.map((item) => {
                               return (
                                 <li key={item.id}>
@@ -779,6 +882,14 @@ export function QuickMenuPage() {
                                       name={item.name}
                                       description={item.description}
                                       priceLabel={formatMenuItemPrice(item)}
+                                      variantRows={menuItemVariantRows(
+                                        item,
+                                        itemPriceVariants(
+                                          item,
+                                          category.priceVariants ?? [],
+                                          categoryScoped,
+                                        ),
+                                      )}
                                       imageUrls={item.imageUrls}
                                       imageUrl={item.imageUrl}
                                       imagePlaceholder={imagePlaceholder}
@@ -792,12 +903,15 @@ export function QuickMenuPage() {
                                         startEditItem(item, category, categoryScoped ?? false)
                                       }
                                       onRemove={() => void removeItem(item.id)}
+                                      isFeatured={item.isFeatured ?? false}
+                                      onToggleFeatured={(next) => void toggleItemFeatured(item.id, next)}
                                     />
                                   )}
                                 </li>
                               );
                             })}
                           </ul>
+                          </div>
 
                           <div className="mt-4 flex flex-wrap gap-2 rounded-2xl border border-dashed border-line bg-paper/80 p-4">
                             <input
@@ -885,9 +999,12 @@ export function QuickMenuPage() {
             <div className="lg:sticky lg:top-6 lg:self-start">
               <MenuGuestPreview
                 locationName={selected.name}
+                address={hub.address ?? null}
+                phone={hub.phone ?? null}
                 copy={copy}
                 categories={hub.categories}
                 imagePlaceholder={imagePlaceholder}
+                catalogBannerUrl={hub.catalogBannerUrl ?? null}
                 locked={!unlocked}
                 priceVariantScope={hub.priceVariantScope}
                 activeCategoryId={selectedCategoryId}

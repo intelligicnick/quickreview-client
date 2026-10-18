@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Copy, ExternalLink, Repeat, Search, Users } from 'lucide-react';
+import { Check, Copy, ExternalLink, Search, Users } from 'lucide-react';
 import { LockedQrGate } from '../components/LockedQrGate';
 import { PageHeader } from '../components/PageHeader';
+import { CommerceSectionSwitch } from '../components/quickcommerce/CommerceSectionSwitch';
 import { QrProductCard } from '../components/QrProductCard';
 import { api, ApiError } from '../lib/api';
 import { productStatusLabel } from '../lib/location-workspace';
@@ -191,7 +192,7 @@ export function QuickRevisitPage() {
   if (!selected) {
     return (
       <div>
-        <PageHeader icon={Repeat} title="Quick Revisit" description="Customer loyalty without login." />
+        <PageHeader title="Quick Revisit" description="Customer loyalty without login." />
         <p className="mt-6 text-sm text-muted">Select a location to manage Quick Revisit.</p>
       </div>
     );
@@ -200,7 +201,7 @@ export function QuickRevisitPage() {
   if (!summary) {
     return (
       <div>
-        <PageHeader icon={Repeat} title="Quick Revisit" description="Loading…" />
+        <PageHeader title="Quick Revisit" description="Loading…" />
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       </div>
     );
@@ -211,9 +212,10 @@ export function QuickRevisitPage() {
   return (
     <div>
       <PageHeader
-        icon={Repeat}
+        breadcrumb="Sell & follow up / QuickCommerce"
         title="Quick Revisit"
         description="Guests scan your QR, enter a mobile number, and see their visit count — no app or password."
+        actions={<CommerceSectionSwitch />}
       />
 
       {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}

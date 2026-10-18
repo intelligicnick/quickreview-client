@@ -1,0 +1,41 @@
+import { cn } from '../../lib/cn';
+
+export function Switch({
+  checked,
+  onChange,
+  label,
+  id,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  id: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${id}-label`}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          'relative h-6 w-10 shrink-0 rounded-full transition-colors',
+          checked ? 'bg-brand' : 'bg-[#CBD5E1]',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+            checked ? 'translate-x-[18px]' : 'translate-x-0.5',
+          )}
+          aria-hidden
+        />
+      </button>
+      <span id={`${id}-label`} className="text-sm font-medium text-ink">
+        {label}
+      </span>
+    </div>
+  );
+}

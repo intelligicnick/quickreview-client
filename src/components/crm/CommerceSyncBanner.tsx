@@ -29,7 +29,7 @@ export function CommerceSyncBanner() {
           <p className="text-sm font-semibold text-ink">Quick Commerce catalog</p>
           <p className="text-xs text-muted">
             {sync.itemCount > 0
-              ? `${sync.itemCount} products/services · ${sync.lastSyncedAt ? `Updated ${formatShortDate(sync.lastSyncedAt)}` : 'Synced'}`
+              ? `${sync.itemCount} ${sync.itemCount === 1 ? 'product/service' : 'products/services'} · ${sync.lastSyncedAt ? `Updated ${formatShortDate(sync.lastSyncedAt)}` : 'Synced'}`
               : 'Sync prices & items for quotations and invoices'}
           </p>
           {message ? <p className="mt-1 text-xs font-medium text-brand-dark">{message}</p> : null}

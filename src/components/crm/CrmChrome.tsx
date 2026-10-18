@@ -1,14 +1,27 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { PageHeader } from '../PageHeader';
+import { Button } from '../ui/Button';
+import { Tabs } from '../ui/Tabs';
+import { useCrm } from '../../lib/crm/context';
 import { crmPath } from '../../lib/crm/paths';
 import { CommerceSyncBanner } from './CommerceSyncBanner';
 
-const TABS = [
-  { segment: '', label: 'Overview' },
-  { segment: 'customers', label: 'Customers' },
-  { segment: 'quotations', label: 'Quotations' },
-  { segment: 'invoices', label: 'Invoices' },
-  { segment: 'follow-ups', label: 'Follow-ups' },
+const TAB_SEGMENTS = [
+  { id: 'overview', segment: '' },
+  { id: 'customers', segment: 'customers' },
+  { id: 'quotations', segment: 'quotations' },
+  { id: 'invoices', segment: 'invoices' },
+  { id: 'follow-ups', segment: 'follow-ups' },
 ] as const;
+
+const TAB_LABELS: Record<string, string> = {
+  overview: 'Overview',
+  customers: 'Customers',
+  quotations: 'Quotations',
+  invoices: 'Invoices',
+  'follow-ups': 'Follow-ups',
+};
 
 function needsCatalogSync(pathname: string) {
   const base = crmPath();
@@ -22,6 +35,8 @@ function needsCatalogSync(pathname: string) {
 
 export function CrmChrome() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { state } = useCrm();
   const hideChrome =
     location.pathname.includes('/onboarding') ||
     location.pathname.includes('/new') ||
@@ -31,40 +46,60 @@ export function CrmChrome() {
 
   if (hideChrome) return null;
 
+  const quotes = state.quotations.filter((q) => q.documentType === 'quotation');
+  const invoices = state.quotations.filter((q) => q.documentType === 'invoice');
+  const openQuotes = quotes.filter((q) => q.status === 'sent' || q.status === 'draft');
+  const unpaidInvoices = invoices.filter((i) => i.status !== 'paid');
+  const openFollowUps = state.followUps.filter((f) => !f.completedAt).length;
+
+  const counts: Record<string, number | undefined> = {
+    customers: state.customers.length,
+    quotations: openQuotes.length,
+    invoices: unpaidInvoices.length,
+    'follow-ups': openFollowUps,
+  };
+
+  const activeTab =
+    TAB_SEGMENTS.find((t) =>
+      t.segment === ''
+        ? location.pathname === crmPath() || location.pathname === `${crmPath()}/`
+        : location.pathname.startsWith(crmPath(t.segment)),
+    )?.id ?? 'overview';
+
+  const tabItems = TAB_SEGMENTS.map((tab) => {
+    const count = counts[tab.id];
+    const base = TAB_LABELS[tab.id] ?? tab.id;
+    return { id: tab.id, label: count != null && tab.id !== 'overview' ? `${base} · ${count}` : base };
+  });
+
   const showSync = needsCatalogSync(location.pathname);
 
   return (
-    <div className="mb-4 space-y-3 lg:mb-5">
-      <div className="hidden lg:block">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted">QuickReview</p>
-        <h1 className="font-display text-xl font-bold">Customers · quotes · invoices</h1>
-      </div>
-      <nav className="flex gap-1 overflow-x-auto pb-1" aria-label="CRM sections">
-        {TABS.map((tab) => {
-          const to = tab.segment ? crmPath(tab.segment) : crmPath();
-          const active =
-            tab.segment === ''
-              ? location.pathname === crmPath() || location.pathname === `${crmPath()}/`
-              : location.pathname.startsWith(crmPath(tab.segment));
-          return (
-            <Link
-              key={tab.segment || 'home'}
-              to={to}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
-                active ? 'bg-ink text-white' : 'bg-white text-muted ring-1 ring-line'
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-        <Link
-          to={crmPath('quotations/new')}
-          className="ml-auto hidden shrink-0 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white lg:inline-flex"
-        >
-          + Quotation
-        </Link>
-      </nav>
+    <div className="mb-6 space-y-4">
+      <PageHeader
+        breadcrumb="Sell & follow up / CRM"
+        title="CRM"
+        description="Customers, quotations, invoices, and follow-ups for this location."
+        actions={
+          <>
+            <Button variant="secondary" size="sm" type="button" onClick={() => navigate(crmPath('customers/new'))}>
+              + Customer
+            </Button>
+            <Button size="sm" type="button" onClick={() => navigate(crmPath('quotations/new'))}>
+              + Quotation
+            </Button>
+          </>
+        }
+      />
+      <Tabs
+        aria-label="CRM sections"
+        value={activeTab}
+        onChange={(id) => {
+          const row = TAB_SEGMENTS.find((t) => t.id === id);
+          navigate(row?.segment ? crmPath(row.segment) : crmPath());
+        }}
+        items={tabItems}
+      />
       {showSync ? <CommerceSyncBanner /> : null}
     </div>
   );

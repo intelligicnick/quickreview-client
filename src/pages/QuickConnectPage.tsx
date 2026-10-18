@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Copy, ExternalLink, IdCard, Lock, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, ExternalLink, Lock, Plus, Trash2 } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { IconButton } from '../components/ui/IconButton';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Button } from '../components/ui/Button';
+import { CRM_BASE } from '../lib/crm/paths';
 import { ConnectCardShell } from '../components/connect/ConnectCardShell';
 import { GuestPreviewHeading } from '../components/MobileScreenFrame';
 import { api, ApiError } from '../lib/api';
@@ -60,6 +65,7 @@ export function QuickConnectPage() {
     label: '',
     url: '',
   });
+  const [savedSnapshot, setSavedSnapshot] = useState('');
 
   const draft = useMemo(() => hub?.profile ?? null, [hub]);
 
@@ -101,6 +107,10 @@ export function QuickConnectPage() {
     };
   }, [selected]);
 
+  useEffect(() => {
+    if (hub?.profile) setSavedSnapshot(JSON.stringify(hub.profile));
+  }, [selected?.id, hub?.slug]);
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected || !draft) return;
@@ -124,6 +134,7 @@ export function QuickConnectPage() {
         },
       });
       setHub(updated);
+      setSavedSnapshot(JSON.stringify(updated.profile));
       setMessage('Card saved');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Save failed');
@@ -177,18 +188,38 @@ export function QuickConnectPage() {
   }
 
   const unlocked = hub?.connectUnlocked ?? false;
+  const profileKey = draft ? JSON.stringify(draft) : '';
+  const pristine = Boolean(savedSnapshot) && profileKey === savedSnapshot;
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-          <IdCard className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">QuickConnect</h1>
-          <p className="text-sm text-muted">Digital business card — share link or QR for this location.</p>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb="Get customers / QuickConnect"
+        title="QuickConnect"
+        description="Digital business card — share link or QR for this location."
+        status={unlocked ? { variant: 'live' } : undefined}
+        actions={
+          hub ? (
+            <div className="flex max-w-md items-center gap-2 rounded-[10px] border border-line bg-surface-2 px-2 py-1.5">
+              <code className="min-w-0 flex-1 truncate font-mono text-xs">{hub.publicUrl.replace(/^https?:\/\//, '')}</code>
+              <IconButton aria-label="Copy public link" onClick={() => void copyLink()}>
+                {copied ? <Check className="h-[18px] w-[18px]" /> : <Copy className="h-[18px] w-[18px]" />}
+              </IconButton>
+              <a
+                href={unlocked ? hub.publicPath : undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold text-brand"
+                onClick={(e) => {
+                  if (!unlocked) e.preventDefault();
+                }}
+              >
+                Open ↗
+              </a>
+            </div>
+          ) : undefined
+        }
+      />
 
       {!selected ? (
         <p className="mt-6 text-sm text-muted">Select a location at the top to edit your card.</p>
@@ -265,13 +296,26 @@ export function QuickConnectPage() {
                     />
                   </label>
                 </div>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="mt-4 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {saving ? 'Saving…' : 'Save card'}
-                </button>
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                  <p className="text-xs text-muted">Changes apply to your public card immediately after save.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        if (!hub || !savedSnapshot) return;
+                        setHub({ ...hub, profile: JSON.parse(savedSnapshot) as Hub['profile'] });
+                      }}
+                      disabled={pristine}
+                    >
+                      Discard
+                    </Button>
+                    <Button size="sm" type="submit" disabled={saving || pristine}>
+                      {saving ? 'Saving…' : 'Save card'}
+                    </Button>
+                  </div>
+                </div>
               </form>
 
               <div className="rounded-2xl border border-line bg-white p-5">
@@ -340,7 +384,14 @@ export function QuickConnectPage() {
               <div className="rounded-2xl border border-line bg-white p-5">
                 <p className="font-bold">Leads ({hub.leadCount})</p>
                 {leads.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted">No leads yet — visitors can leave contact info on your card.</p>
+                  <EmptyState
+                    icon={<Plus className="h-5 w-5" aria-hidden />}
+                    title="No leads yet"
+                    description="When a visitor taps Exchange on your card, their details show up here and in CRM."
+                    action={
+                      <Link to={CRM_BASE} className="text-sm font-semibold text-brand">Open CRM</Link>
+                    }
+                  />
                 ) : (
                   <ul className="mt-3 space-y-2">
                     {leads.map((lead) => (

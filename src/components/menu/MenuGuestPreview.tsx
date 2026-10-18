@@ -22,6 +22,7 @@ type MenuItem = PricedMenuItem & {
   imageUrls?: string[];
   isNonVeg: boolean;
   isAvailable?: boolean;
+  isFeatured?: boolean;
 };
 
 type MenuCategory = {
@@ -48,6 +49,7 @@ type Props = {
   priceVariantScope?: 'category' | 'product';
   activeCategoryId?: string | null;
   featuredTabLabel?: string;
+  catalogBannerUrl?: string | null;
 };
 
 function FeaturedPreviewCard({
@@ -117,6 +119,7 @@ export function MenuGuestPreview({
   priceVariantScope = 'product',
   activeCategoryId = null,
   featuredTabLabel = "Today's Special",
+  catalogBannerUrl = null,
 }: Props) {
   const categoryScoped = priceVariantScope === 'category';
   const [search, setSearch] = useState('');
@@ -136,12 +139,16 @@ export function MenuGuestPreview({
     return filterMenuCatalog(categories, search, categoryId);
   }, [categories, copy.guestBrowse, search, categoryId, pillCategoryId]);
 
-  const featuredItem = useMemo(() => {
+  const featuredItems = useMemo(() => {
+    const rows: { item: MenuItem; category: MenuCategory }[] = [];
     for (const category of categories) {
-      const item = category.items.find((row) => row.isAvailable !== false);
-      if (item) return { item, category };
+      for (const item of category.items) {
+        if (item.isFeatured && item.isAvailable !== false) {
+          rows.push({ item, category });
+        }
+      }
     }
-    return null;
+    return rows;
   }, [categories]);
 
   return (
@@ -163,6 +170,7 @@ export function MenuGuestPreview({
             locationName={locationName}
             address={address}
             phone={phone ?? null}
+            bannerImageUrl={catalogBannerUrl}
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-16 pt-3">
@@ -202,21 +210,25 @@ export function MenuGuestPreview({
               />
             ) : null}
 
-            {featuredItem ? (
+            {featuredItems.length > 0 ? (
               <section className="mt-4">
                 <h3 className="flex items-center gap-1.5 text-sm font-bold text-brand">
                   <Star className="h-4 w-4 fill-brand/20" aria-hidden />
                   {featuredTabLabel}
                 </h3>
-                <div className="mt-2">
-                  <FeaturedPreviewCard
-                    item={featuredItem.item}
-                    category={featuredItem.category}
-                    copy={copy}
-                    imagePlaceholder={imagePlaceholder}
-                    categoryScoped={categoryScoped}
-                  />
-                </div>
+                <ul className="mt-2 space-y-2">
+                  {featuredItems.map(({ item, category }) => (
+                    <li key={item.id}>
+                      <FeaturedPreviewCard
+                        item={item}
+                        category={category}
+                        copy={copy}
+                        imagePlaceholder={imagePlaceholder}
+                        categoryScoped={categoryScoped}
+                      />
+                    </li>
+                  ))}
+                </ul>
               </section>
             ) : null}
 

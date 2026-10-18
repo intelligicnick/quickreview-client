@@ -25,16 +25,6 @@ export function CrmCustomersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Customers</h1>
-          <p className="text-sm text-muted">{state.customers.length} total</p>
-        </div>
-        <Link to="/app/quickcrm/customers/new" className="btn-gradient shrink-0 px-4 py-2.5 text-sm lg:hidden">
-          Add
-        </Link>
-      </div>
-
       <input
         className="field w-full"
         placeholder="Search name, company, phone…"

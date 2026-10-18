@@ -1,20 +1,33 @@
-export type ProductPlanStatus = 'ACTIVE' | 'PENDING_PAYMENT' | 'EXPIRED' | 'NONE' | 'TRIAL';
+import {
+  deriveProductPlanStatus,
+  productStatusLabelFromAccess,
+  type ProductAccessLike,
+  type ProductPlanStatus,
+} from '../lib/product-access';
 
-export function productPlanStatus(unlocked: boolean, status: string): ProductPlanStatus {
-  if (unlocked) return 'ACTIVE';
-  if (status === 'PENDING_PAYMENT') return 'PENDING_PAYMENT';
-  if (status === 'EXPIRED') return 'EXPIRED';
-  if (status === 'TRIAL') return 'TRIAL';
-  return 'NONE';
+export type { ProductPlanStatus };
+
+export function productPlanStatus(
+  unlocked: boolean,
+  status: string,
+  endDate?: string | null,
+  pendingPaymentId?: string | null,
+): ProductPlanStatus {
+  return deriveProductPlanStatus({ unlocked, status, endDate: endDate ?? null, pendingPaymentId });
 }
 
-export function productStatusLabel(unlocked: boolean, status: string): string {
-  const s = productPlanStatus(unlocked, status);
-  if (s === 'ACTIVE') return 'Active';
-  if (s === 'PENDING_PAYMENT') return 'Pending payment';
-  if (s === 'EXPIRED') return 'Expired';
-  if (s === 'TRIAL') return 'Trial';
-  return 'Not started';
+export function productStatusLabel(
+  unlocked: boolean,
+  status: string,
+  endDate?: string | null,
+  pendingPaymentId?: string | null,
+): string {
+  return productStatusLabelFromAccess({
+    unlocked,
+    status,
+    endDate: endDate ?? null,
+    pendingPaymentId,
+  });
 }
 
 const BADGE_CLASS: Record<ProductPlanStatus, string> = {
@@ -28,16 +41,14 @@ const BADGE_CLASS: Record<ProductPlanStatus, string> = {
 export function ProductStatusBadge({
   unlocked,
   status,
+  endDate = null,
+  pendingPaymentId = null,
   className = '',
-}: {
-  unlocked: boolean;
-  status: string;
-  className?: string;
-}) {
-  const plan = productPlanStatus(unlocked, status);
+}: ProductAccessLike & { className?: string }) {
+  const plan = deriveProductPlanStatus({ unlocked, status, endDate, pendingPaymentId });
   return (
     <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_CLASS[plan]} ${className}`}>
-      {productStatusLabel(unlocked, status)}
+      {productStatusLabelFromAccess({ unlocked, status, endDate, pendingPaymentId })}
     </span>
   );
 }

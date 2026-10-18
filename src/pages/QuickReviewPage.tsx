@@ -12,7 +12,15 @@ import {
   User,
 } from 'lucide-react';
 import { LockedQrGate } from '../components/LockedQrGate';
+import { PageHeader } from '../components/PageHeader';
 import { QrCodePreview } from '../components/QrCodePreview';
+import { Button } from '../components/ui/Button';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Segmented } from '../components/ui/Segmented';
+import { StatTile } from '../components/ui/StatTile';
+import { StatusPill } from '../components/ui/StatusPill';
+import { Switch } from '../components/ui/Switch';
+import { Tabs } from '../components/ui/Tabs';
 import { ReviewGrowthCard, type ReviewGrowthData } from '../components/review/ReviewGrowthCard';
 import { ReviewGuestPreview } from '../components/review/ReviewGuestPreview';
 import { api, ApiError } from '../lib/api';
@@ -150,6 +158,7 @@ export function QuickReviewPage() {
   const [reviewGrowthError, setReviewGrowthError] = useState<string | null>(null);
   const [inboxFilter, setInboxFilter] = useState<InboxFilter>('open');
   const [linkCopied, setLinkCopied] = useState(false);
+  const [askUnhappyPhone, setAskUnhappyPhone] = useState(true);
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -260,26 +269,38 @@ export function QuickReviewPage() {
   const googleOpens = summary?.stats.googleOpens ?? 0;
   const privateFeedback = summary?.stats.privateFeedback ?? 0;
   const googlePct = pageViews > 0 ? Math.round((googleOpens / pageViews) * 100) : 0;
+  const leftWithoutFinishing = Math.max(0, pageViews - googleOpens - privateFeedback);
+  const leftPct = pageViews > 0 ? (leftWithoutFinishing / pageViews) * 100 : 0;
+
+  const tabItems = buildTabs(inbox.length).map((t) => ({
+    id: t.id,
+    label: t.label,
+    badge:
+      t.id === 'inbox' && inbox.length > 0 ? (
+        <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700">{inbox.length} new</span>
+      ) : undefined,
+  }));
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-extrabold tracking-tight">QuickReview</h1>
-            {selected && summary && unlocked ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
-                Live
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 max-w-2xl text-sm text-muted">
-            Happy guests (4–5★) get an AI-drafted Google review. Unhappy guests (1–3★) reach your private
-            inbox instead.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb="Get customers / QuickReview"
+        title="QuickReview"
+        description="Happy guests (4–5★) get an AI-drafted Google review. Unhappy guests (1–3★) reach your private inbox instead."
+        status={unlocked ? { variant: 'live' } : undefined}
+        actions={
+          summary && tab === 'stats' ? (
+            <>
+              <Button variant="secondary" size="sm" type="button" onClick={() => void copyReviewLink(summary.publicUrl)}>
+                Copy review link
+              </Button>
+              <Button size="sm" type="button" onClick={() => downloadQrPng(qrWrapRef.current, 'review-qr')}>
+                Download QR
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       {!selected ? (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6 text-center">
@@ -296,22 +317,7 @@ export function QuickReviewPage() {
       {selected && summary ? (
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">
-          <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="QuickReview sections">
-            {buildTabs(inbox.length).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold ${
-                  tab === item.id
-                    ? 'border-brand text-brand-dark'
-                    : 'border-transparent text-muted hover:text-ink'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <Tabs aria-label="QuickReview sections" value={tab} onChange={setTab} items={tabItems} />
 
           {tab === 'qr' ? (
             <div className="mt-6 space-y-5">
@@ -385,12 +391,7 @@ export function QuickReviewPage() {
                         </div>
                         <p className="mt-0.5 text-sm text-muted">Where 4–5★ guests are sent to post</p>
                       </div>
-                      {summary.googleReviewUrl ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                          <Check className="h-3.5 w-3.5" />
-                          Connected
-                        </span>
-                      ) : null}
+                      {summary.googleReviewUrl ? <StatusPill variant="connected" /> : null}
                     </div>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <label className="block text-sm">
@@ -433,16 +434,18 @@ export function QuickReviewPage() {
                   <section>
                     <h2 className="font-bold">How guests are routed</h2>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-red-100 bg-red-50/80 p-4">
-                        <p className="font-bold text-red-900">1–3★ · Private</p>
-                        <p className="mt-1 text-sm text-red-900/80">
+                      <div className="rounded-2xl border border-line bg-white p-4">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-orange text-sm font-bold">1–3</span>
+                        <p className="mt-2 font-bold text-ink">Private → Inbox</p>
+                        <p className="mt-1 text-sm text-muted">
                           Guest writes what went wrong. It lands in your Inbox — never on Google.
                         </p>
                       </div>
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
-                        <p className="font-bold text-emerald-900">4–5★ · Public</p>
-                        <p className="mt-1 text-sm text-emerald-900/80">
-                          Guest answers 2–3 questions, AI drafts the review, guest edits and posts on Google.
+                      <div className="rounded-2xl border border-line bg-white p-4">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-brand text-sm font-bold">4–5</span>
+                        <p className="mt-2 font-bold text-ink">Public → Google</p>
+                        <p className="mt-1 text-sm text-muted">
+                          Guest answers questions, AI drafts the review, guest edits and posts on Google.
                         </p>
                       </div>
                     </div>
@@ -464,52 +467,53 @@ export function QuickReviewPage() {
             <div className="mt-6 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-bold">Performance</h2>
-                <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-white p-1 text-xs font-semibold">
-                  {(
-                    [
-                      ['7', '7 days'],
-                      ['30', '30 days'],
-                      ['90', '90 days'],
-                      ['all', 'All time'],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setStatsRange(id)}
-                      className={`rounded-lg px-2.5 py-1.5 ${
-                        statsRange === id ? 'bg-ink text-white' : 'text-muted hover:text-ink'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <Segmented
+                  aria-label="Date range"
+                  value={statsRange}
+                  onChange={setStatsRange}
+                  options={[
+                    { id: '7', label: '7 days' },
+                    { id: '30', label: '30 days' },
+                    { id: '90', label: '90 days' },
+                    { id: 'all', label: 'All time' },
+                  ]}
+                />
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                   { label: 'Page views', value: pageViews, hint: 'QR scans + link opens' },
                   {
-                    label: 'Google opens',
+                    label: 'Sent to Google',
                     value: googleOpens,
-                    hint: `${googlePct}% of views`,
-                    accent: 'text-emerald-600',
+                    hint: `${googlePct}% of page views`,
+                    accent: 'text-brand',
                   },
                   {
                     label: 'Private feedback',
                     value: privateFeedback,
-                    hint: 'Kept off Google',
-                    accent: 'text-red-600',
+                    hint: (
+                      <>
+                        Kept off Google ·{' '}
+                        <button type="button" className="font-semibold text-brand" onClick={() => setTab('inbox')}>
+                          read it →
+                        </button>
+                      </>
+                    ),
+                    accent: 'text-orange',
                   },
-                  { label: 'Star taps', value: summary.stats.stars, hint: 'Includes changed ratings' },
+                  {
+                    label: 'Star taps',
+                    value: summary.stats.stars,
+                    hint: 'Counts every tap, incl. changes',
+                  },
                 ].map((card) => (
-                  <div key={card.label} className="rounded-2xl border border-line bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">{card.label}</p>
-                    <p className={`mt-2 text-3xl font-extrabold tabular-nums ${card.accent ?? ''}`}>
-                      {card.value}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">{card.hint}</p>
-                  </div>
+                  <StatTile
+                    key={card.label}
+                    label={card.label}
+                    value={card.value.toLocaleString('en-IN')}
+                    helper={card.hint}
+                    accentClassName={card.accent}
+                  />
                 ))}
               </div>
 
@@ -526,10 +530,16 @@ export function QuickReviewPage() {
                       bar: 'bg-brand',
                     },
                     {
-                      label: 'Sent private feedback (1–3★)',
+                      label: 'Private feedback (1–3★)',
                       value: privateFeedback,
                       pct: pageViews > 0 ? (privateFeedback / pageViews) * 100 : 0,
-                      bar: 'bg-orange-400',
+                      bar: 'bg-orange',
+                    },
+                    {
+                      label: 'Left without finishing',
+                      value: leftWithoutFinishing,
+                      pct: leftPct,
+                      bar: 'bg-muted',
                     },
                   ].map((row) => (
                     <li key={row.label}>
@@ -540,15 +550,19 @@ export function QuickReviewPage() {
                           <span className="font-bold text-ink">· {row.value}</span>
                         </span>
                       </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper">
-                        <div
-                          className={`h-full rounded-full ${row.bar}`}
-                          style={{ width: `${Math.min(100, row.pct)}%` }}
-                        />
-                      </div>
+                      <ProgressBar value={row.pct} max={100} barClassName={row.bar} className="mt-2" />
                     </li>
                   ))}
                 </ul>
+                {leftPct > 50 ? (
+                  <p className="mt-4 rounded-[10px] bg-blue-50 px-3 py-2 text-sm text-brand-dark">
+                    Most guests leave before tapping a star — try asking for feedback earlier in{' '}
+                    <button type="button" className="font-semibold underline" onClick={() => setTab('settings')}>
+                      AI settings
+                    </button>
+                    .
+                  </p>
+                ) : null}
               </article>
 
               {reviewGrowthError ? (
@@ -562,26 +576,16 @@ export function QuickReviewPage() {
             <div className="mt-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-bold">Private feedback</h2>
-                <div className="flex flex-wrap gap-1 text-sm font-semibold">
-                  {(
-                    [
-                      ['open', `Open · ${inbox.length}`],
-                      ['resolved', 'Resolved · 0'],
-                      ['all', `All · ${inbox.length}`],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setInboxFilter(id)}
-                      className={`rounded-full px-3 py-1.5 ${
-                        inboxFilter === id ? 'bg-ink text-white' : 'border border-line bg-white text-ink'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <Segmented
+                  aria-label="Inbox filter"
+                  value={inboxFilter}
+                  onChange={setInboxFilter}
+                  options={[
+                    { id: 'open', label: `Open · ${inbox.length}` },
+                    { id: 'resolved', label: 'Resolved · 0' },
+                    { id: 'all', label: `All · ${inbox.length}` },
+                  ]}
+                />
               </div>
 
               {filteredInbox.length === 0 ? (
@@ -623,14 +627,18 @@ export function QuickReviewPage() {
                   })}
                 </ul>
               )}
-              <p className="mt-4 text-xs text-muted">
-                Tip: ask guests for a phone number on the 1–3★ screen so you can call them back.
+              <p className="mt-4 rounded-[10px] bg-blue-50 px-3 py-2 text-sm text-brand-dark">
+                Tip: ask for a phone number in{' '}
+                <button type="button" className="font-semibold underline" onClick={() => setTab('settings')}>
+                  AI settings
+                </button>{' '}
+                so you can call unhappy guests back.
               </p>
             </div>
           ) : null}
 
           {tab === 'settings' && unlocked ? (
-            <div className="relative mt-6 pb-24">
+            <div className="relative mt-6">
               <section className="rounded-2xl border border-line bg-white p-5">
                 <h2 className="font-bold">Questions for happy guests (4–5★)</h2>
                 <ul className="mt-4 space-y-3">
@@ -729,7 +737,7 @@ export function QuickReviewPage() {
 
               <section className="mt-5 rounded-2xl border border-line bg-white p-5">
                 <h2 className="font-bold">Review tone</h2>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="mt-3 grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Review tone">
                   {(
                     [
                       ['friendly', 'Friendly', 'Warm, conversational'],
@@ -740,9 +748,11 @@ export function QuickReviewPage() {
                     <button
                       key={id}
                       type="button"
+                      role="radio"
+                      aria-checked={reviewTone === id}
                       onClick={() => setReviewTone(id)}
                       className={`rounded-2xl border p-4 text-left ${
-                        reviewTone === id ? 'border-brand bg-brand/5' : 'border-line bg-white'
+                        reviewTone === id ? 'border-brand border-2 bg-white' : 'border-line bg-white'
                       }`}
                     >
                       <p className="font-bold">{title}</p>
@@ -752,17 +762,25 @@ export function QuickReviewPage() {
                 </div>
               </section>
 
-              <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink px-4 py-3 lg:left-72">
-                <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-end gap-3">
-                  <div className="flex gap-2">
-                    <button type="button" className="rounded-xl px-4 py-2 text-sm font-semibold text-white" onClick={resetSettingsDraft}>
-                      Discard
-                    </button>
-                    <button type="button" className={BTN_PRIMARY} onClick={() => void saveAiSettings()}>
-                      Save changes
-                    </button>
-                  </div>
+              <section className="mt-5 rounded-2xl border border-line bg-white p-5">
+                <h2 className="font-bold text-ink">Unhappy guests (1–3★)</h2>
+                <div className="mt-3">
+                  <Switch
+                    id="ask-unhappy-phone"
+                    checked={askUnhappyPhone}
+                    onChange={setAskUnhappyPhone}
+                    label={askUnhappyPhone ? 'Ask for a phone number' : 'Do not ask for phone'}
+                  />
                 </div>
+              </section>
+
+              <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                <button type="button" className={BTN_SECONDARY} onClick={resetSettingsDraft}>
+                  Discard
+                </button>
+                <button type="button" className={BTN_PRIMARY} onClick={() => void saveAiSettings()}>
+                  Save changes
+                </button>
               </div>
               {settingsMsg ? <p className="mt-2 text-sm text-brand-dark">{settingsMsg}</p> : null}
             </div>

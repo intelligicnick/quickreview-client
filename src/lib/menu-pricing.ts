@@ -34,6 +34,20 @@ export function itemPriceVariants(
   return item.priceVariants ?? [];
 }
 
+export type MenuItemVariantRow = { name: string; priceInr: number };
+
+export function menuItemVariantRows(
+  item: PricedMenuItem,
+  variants: PriceVariant[],
+): MenuItemVariantRow[] {
+  if (variants.length < 2 || !item.variantPrices?.length) return [];
+  const byId = new Map(variants.map((variant) => [variant.id, variant.name]));
+  return item.variantPrices.map((row) => ({
+    name: byId.get(row.variantId) ?? 'Variation',
+    priceInr: row.priceInr,
+  }));
+}
+
 export function formatMenuItemPriceDetail(
   item: PricedMenuItem,
   variants: PriceVariant[],

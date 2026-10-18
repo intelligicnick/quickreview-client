@@ -29,6 +29,10 @@ import { quickScanToServerFields } from '../lib/quickscan/server-map';
 import { emptyQuickScanContact, type QuickScanContact, type QuickScanHistoryRow } from '../lib/quickscan/types';
 import { downloadQuickScanVcard } from '../lib/quickscan/vcard';
 import { useLocationContext } from '../lib/location-context';
+import { PageHeader } from '../components/PageHeader';
+import { Button } from '../components/ui/Button';
+import { Segmented } from '../components/ui/Segmented';
+import { IconButton } from '../components/ui/IconButton';
 
 type CaptureMode = 'front' | 'back' | 'both';
 type FlowStep = 'home' | 'capture' | 'edit' | 'processing' | 'review';
@@ -294,35 +298,35 @@ export function QuickScanPage() {
   }
 
   if (flowStep === 'capture') {
+    const sideLabel =
+      mode === 'both' ? `Side ${processedSides.length + 1} of 2` : mode === 'back' ? 'Back' : 'Front';
     return (
       <div>
-        <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-muted">
+          <button type="button" className="font-semibold text-brand" onClick={resetScanSession}>QuickScan</button>
+          {' / '}Capture
+        </p>
+        <div className="mt-2 flex items-start justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Scan visiting card</h1>
-            <p className="mt-1 text-sm text-muted">Camera or upload — JPG, PNG, WebP supported.</p>
+            <h1 className="font-display text-[32px] font-bold tracking-tight text-ink">Scan visiting card</h1>
+            <p className="text-sm text-muted">Fit the card inside the frame. OCR runs in your browser.</p>
           </div>
-          <button type="button" onClick={resetScanSession} className="rounded-lg p-2 text-muted hover:bg-paper">
-            <X className="h-5 w-5" />
-          </button>
+          <IconButton aria-label="Close scanner" onClick={resetScanSession}>
+            <X className="h-[18px] w-[18px]" />
+          </IconButton>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {MODE_OPTIONS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setMode(item.id);
-                setCaptureSide(item.id === 'back' ? 'back' : 'front');
-                setProcessedSides([]);
-              }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                mode === item.id ? 'border-brand bg-brand/5 text-brand' : 'border-line'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          className="mt-4"
+          aria-label="Capture mode"
+          value={mode}
+          onChange={(id) => {
+            setMode(id);
+            setCaptureSide(id === 'back' ? 'back' : 'front');
+            setProcessedSides([]);
+          }}
+          options={MODE_OPTIONS.map((item) => ({ id: item.id, label: item.label }))}
+        />
+        <p className="mt-2 text-sm font-semibold text-muted">{sideLabel}</p>
         {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
         <CardCameraCapture
           active
@@ -340,23 +344,23 @@ export function QuickScanPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">QuickScan</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted">
-            Scan or upload a visiting card, review extracted details, and download a vCard — processed locally in
-            your browser with free OCR. No API keys required.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={startScan}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white"
-        >
-          <ScanLine className="h-4 w-4" />
-          Scan visiting card
-        </button>
-      </div>
+      <PageHeader
+        breadcrumb="Sell & follow up / QuickScan"
+        title="QuickScan"
+        description="Scan or upload a visiting card, review details, and save to CRM — OCR runs locally in your browser."
+        actions={
+          <Button type="button" onClick={startScan}>
+            <ScanLine className="h-[18px] w-[18px]" aria-hidden />
+            Scan a card
+          </Button>
+        }
+      />
+
+      <ol className="mt-6 grid gap-2 text-sm text-muted sm:grid-cols-3">
+        <li><span className="font-semibold text-ink">1.</span> Capture or upload the card</li>
+        <li><span className="font-semibold text-ink">2.</span> Review OCR text</li>
+        <li><span className="font-semibold text-ink">3.</span> Save to CRM or download vCard</li>
+      </ol>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <button
@@ -370,7 +374,7 @@ export function QuickScanPage() {
             <p className="text-sm text-muted">Rear camera on mobile, webcam on desktop</p>
           </div>
         </button>
-        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-white p-4">
+        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-line bg-white p-4">
           <ImagePlus className="h-8 w-8 text-brand" />
           <div>
             <p className="font-semibold">Upload image</p>

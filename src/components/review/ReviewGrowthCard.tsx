@@ -97,7 +97,7 @@ export function ReviewGrowthCard({ data }: { data: ReviewGrowthData }) {
         </div>
       </div>
 
-      {points.length ? (
+      {points.length >= 2 ? (
         <>
           <div className="mt-8 flex h-52 items-end gap-2 sm:gap-3" role="img" aria-label="Review count by day">
             {points.map((point) => {
@@ -136,7 +136,7 @@ export function ReviewGrowthCard({ data }: { data: ReviewGrowthData }) {
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">{point.totalReviews.toLocaleString()}</td>
                     <td className="py-2 text-right tabular-nums font-semibold text-brand">
-                      {incrementLabel(point.dayIncrement)}
+                      {point.isBaseline ? 'Baseline' : incrementLabel(point.dayIncrement)}
                     </td>
                   </tr>
                 ))}
@@ -144,6 +144,33 @@ export function ReviewGrowthCard({ data }: { data: ReviewGrowthData }) {
             </table>
           </div>
         </>
+      ) : points.length === 1 ? (
+        <div className="mt-6 flex h-[180px] flex-col items-center justify-center rounded-[10px] border border-dashed border-line bg-surface-2 px-4 text-center">
+          <span className="mb-3 h-2.5 w-2.5 rounded-full bg-brand" aria-hidden />
+          <p className="max-w-sm text-sm text-muted">
+            Your growth line starts tomorrow — we check your Google review count once a day.
+          </p>
+          <div className="mt-6 w-full overflow-x-auto">
+            <table className="w-full min-w-[280px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs font-semibold uppercase tracking-wide text-muted">
+                  <th className="py-2 pr-3">Day</th>
+                  <th className="py-2 pr-3 text-right">Total reviews</th>
+                  <th className="py-2 text-right">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-line/60">
+                  <td className="py-2 pr-3 font-medium text-ink">
+                    {formatStarted(`${points[0].date}T00:00:00.000Z`)}
+                  </td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{points[0].totalReviews.toLocaleString('en-IN')}</td>
+                  <td className="py-2 text-right text-sm font-semibold text-muted">Baseline</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
         <p className="mt-6 text-sm text-muted">
           Checking Google for your review count — refresh this page in a moment.
