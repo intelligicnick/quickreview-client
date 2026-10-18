@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+.admin-shell {
+  --admin-bg: #f5f6f8;
+  --admin-surface: #ffffff;
+  --admin-border: #e4e7ec;
+  --admin-border-soft: #f0f2f5;
+  --admin-text: #101828;
+  --admin-text-2: #344054;
+  --admin-muted: #475467;
+  --admin-subtle: #667085;
+  --admin-brand: #1d4ed8;
+  --admin-brand-hover: #1e40af;
+  --admin-brand-soft: #eef2ff;
+  --admin-success: #067647;
+  --admin-success-soft: #ecfdf3;
+  --admin-warn: #93370d;
+  --admin-warn-soft: #fef0c7;
+  --admin-warn-border: #fedf89;
+  --admin-danger: #b42318;
+  --admin-danger-soft: #fee4e2;
+  --admin-danger-border: #fda29b;
+  --admin-radius-card: 12px;
+  --admin-radius-ctl: 8px;
+  --admin-font: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --admin-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  font-family: var(--admin-font);
+  color: var(--admin-text);
+  background: var(--admin-bg);
+}
+
+.admin-shell .font-mono-admin {
+  font-family: var(--admin-mono);
+}
+
+.admin-shell .admin-page-title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+}
+
+.admin-shell .admin-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.admin-shell .admin-body {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--admin-text-2);
+}
+
+.admin-shell .admin-meta {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+
+.admin-shell .admin-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-muted);
+}
+
+.admin-shell .admin-card {
+  border-radius: var(--admin-radius-card);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+}
+
+.admin-shell .admin-ctl {
+  min-height: 36px;
+  border-radius: var(--admin-radius-ctl);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-shell .admin-ctl-form {
+  min-height: 40px;
+}
+
+.admin-shell .admin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--admin-radius-ctl);
+  border: 0;
+  background: var(--admin-brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-shell .admin-btn-primary:hover:not(:disabled) {
+  background: var(--admin-brand-hover);
+}
+
+.admin-shell .admin-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-shell .admin-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--admin-radius-ctl);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-shell .admin-btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--admin-radius-ctl);
+  border: 1px solid var(--admin-danger-border);
+  background: var(--admin-surface);
+  color: var(--admin-danger);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-shell .admin-pill-warn {
+  background: var(--admin-warn-soft);
+  border: 1px solid var(--admin-warn-border);
+  color: var(--admin-warn);
+}
+
+.admin-shell .admin-pill-success {
+  background: var(--admin-success-soft);
+  color: var(--admin-success);
+}
+
+.admin-shell .admin-nav-active {
+  background: var(--admin-brand-soft);
+  color: var(--admin-brand);
+}
+
+.admin-shell .admin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

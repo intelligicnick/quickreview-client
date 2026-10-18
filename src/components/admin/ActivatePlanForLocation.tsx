@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../lib/api';
-import { inr } from '../../lib/admin-ui';
+import { productDisplayName } from '../../lib/admin-products';
+import { formatINR } from '../../lib/admin-ui';
 
 type Plan = {
   id: string;
@@ -10,15 +11,6 @@ type Plan = {
   amountInr: number;
   durationDays: number;
   isActive: boolean;
-};
-
-const PRODUCT_LABEL: Record<string, string> = {
-  QUICK_REVIEW: 'QuickReview',
-  QUICK_MENU: 'QuickCommerce',
-  QUICK_CRM: 'CRM',
-  QUICK_CONNECT: 'QuickConnect',
-  QUICK_DESIGN: 'QuickDesign',
-  QUICK_SCAN: 'QuickScan',
 };
 
 type Props = {
@@ -46,9 +38,9 @@ export function ActivatePlanForLocation({ locationId, locationName, onActivated,
   const planOptions = useMemo(() => {
     return plans
       .map((plan) => {
-        const product = PRODUCT_LABEL[plan.product] ?? plan.product;
+        const product = productDisplayName(plan.product);
         const price =
-          plan.amountInr === 0 ? `free · ${plan.durationDays}d` : `${inr(plan.amountInr)} · ${plan.durationDays}d`;
+          plan.amountInr === 0 ? `free · ${plan.durationDays}d` : `${formatINR(plan.amountInr)} · ${plan.durationDays}d`;
         return { plan, label: `${product} — ${plan.name} (${price})` };
       })
       .sort((a, b) => a.label.localeCompare(b.label));

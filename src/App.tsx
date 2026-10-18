@@ -10,7 +10,9 @@ import { AdminHomePage } from './pages/admin/AdminHomePage';
 import { AdminLocationsPage } from './pages/admin/AdminLocationsPage';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminContactPage } from './pages/admin/AdminContactPage';
-import { AdminMarketplacePage } from './pages/admin/AdminMarketplacePage';
+import { AdminHardwareOrdersPage } from './pages/admin/AdminHardwareOrdersPage';
+import { AdminPlansPage } from './pages/admin/AdminPlansPage';
+import { AdminStoreCataloguePage } from './pages/admin/AdminStoreCataloguePage';
 import { AdminQrBatchesPage } from './pages/admin/AdminQrBatchesPage';
 import { AdminActivityPage } from './pages/admin/AdminActivityPage';
 import { AdminCounterSalePage } from './pages/admin/AdminCounterSalePage';
@@ -66,6 +68,7 @@ import { RequireCrmOnboarding } from './pages/crm/RequireCrmOnboarding';
 import { LandingPage } from './pages/LandingPage';
 import { GuidesPage } from './pages/GuidesPage';
 import { GuideArticlePage } from './pages/GuideArticlePage';
+import { LegalDocumentPage } from './pages/LegalDocumentPage';
 import { CounterSaleShell } from './pages/counter-sale/CounterSaleShell';
 import { CounterSaleHomePage } from './pages/counter-sale/CounterSaleHomePage';
 import { CounterSaleLoginPage } from './pages/counter-sale/CounterSaleLoginPage';
@@ -133,6 +136,9 @@ export default function App() {
       />
       <Route path="/guides" element={<GuidesPage />} />
       <Route path="/guides/:slug" element={<GuideArticlePage />} />
+      <Route path="/terms" element={<LegalDocumentPage docId="terms" />} />
+      <Route path="/privacy-policy" element={<LegalDocumentPage docId="privacy" />} />
+      <Route path="/cancellation-policy" element={<LegalDocumentPage docId="cancellation" />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -216,9 +222,12 @@ export default function App() {
         <Route path="users/:userId" element={<AdminMerchantRedirect />} />
         <Route path="locations" element={<AdminLocationsPage />} />
         <Route path="payments" element={<AdminSubscriptionsPage />} />
+        <Route path="plans" element={<AdminPlansPage />} />
         <Route path="subscriptions" element={<Navigate to="/admin/payments" replace />} />
         <Route path="qr" element={<AdminQrBatchesPage />} />
-        <Route path="marketplace" element={<AdminMarketplacePage />} />
+        <Route path="hardware-orders" element={<AdminHardwareOrdersPage />} />
+        <Route path="store-catalogue" element={<AdminStoreCataloguePage />} />
+        <Route path="marketplace" element={<Navigate to="/admin/hardware-orders" replace />} />
         <Route path="contact" element={<AdminContactPage />} />
         <Route path="activity" element={<AdminActivityPage />} />
         <Route path="counter-sale" element={<AdminCounterSalePage />} />

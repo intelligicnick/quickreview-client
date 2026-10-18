@@ -1,6 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { ActivatePlanForLocation } from '../../components/admin/ActivatePlanForLocation';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { PageHeader } from '../../components/admin/PageHeader';
+import { Sheet } from '../../components/admin/ui/Sheet';
+import { Modal } from '../../components/admin/ui/Modal';
 import { api, ApiError } from '../../lib/api';
+import { formatDateTime } from '../../lib/admin-ui';
 
 type AdminLocation = {
   id: string;
@@ -23,13 +27,22 @@ type AdminLocation = {
   };
 };
 
+type PlanFilter = 'all' | 'paid' | 'trial' | 'none';
+
 export function AdminLocationsPage() {
   const [query, setQuery] = useState('');
   const [applied, setApplied] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ACTIVE' | 'INACTIVE'>('all');
+  const [planFilter] = useState<PlanFilter>('all');
   const [rows, setRows] = useState<AdminLocation[]>([]);
+  const [selected, setSelected] = useState<AdminLocation | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [slug, setSlug] = useState('');
+  const [menuMode, setMenuMode] = useState<AdminLocation['menuMode']>('FOOD');
 
   async function load(q: string) {
     setLoading(true);
@@ -49,217 +62,270 @@ export function AdminLocationsPage() {
     void load(applied);
   }, [applied]);
 
+  useEffect(() => {
+    if (selected) {
+      setSlug(selected.slug ?? '');
+      setMenuMode(selected.menuMode);
+    }
+  }, [selected]);
+
+  const filtered = useMemo(() => {
+    return rows.filter((row) => {
+      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
+      return true;
+    });
+  }, [rows, statusFilter, planFilter]);
+
   function onSearch(event: FormEvent) {
     event.preventDefault();
     setApplied(query.trim());
   }
 
-  async function setStatus(row: AdminLocation) {
-    const next = row.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setBusyId(row.id);
+  async function saveMeta() {
+    if (!selected) return;
+    setBusy(true);
     setError(null);
     try {
-      await api(`/api/admin/locations/${row.id}`, { method: 'PATCH', body: { status: next } });
-      await load(applied);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not update this location');
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function saveMeta(row: AdminLocation, slug: string, menuMode: AdminLocation['menuMode']) {
-    setBusyId(row.id);
-    setError(null);
-    try {
-      await api(`/api/admin/locations/${row.id}`, {
+      await api(`/api/admin/locations/${selected.id}`, {
         method: 'PATCH',
         body: { slug: slug.trim() || null, menuMode },
       });
       await load(applied);
+      const updated = rows.find((r) => r.id === selected.id);
+      if (updated) setSelected({ ...updated, slug: slug.trim() || null, menuMode });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save location settings');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   }
 
-  async function refreshMetrics(row: AdminLocation) {
-    setBusyId(row.id);
-    setError(null);
+  async function refreshMetrics() {
+    if (!selected) return;
+    setBusy(true);
     try {
-      await api(`/api/admin/locations/${row.id}/refresh-metrics`, { method: 'POST' });
+      await api(`/api/admin/locations/${selected.id}/refresh-metrics`, { method: 'POST' });
       await load(applied);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not refresh metrics');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   }
 
-  async function remove(row: AdminLocation) {
-    if (!window.confirm(`Delete ${row.name}? The business stays.`)) return;
-    setBusyId(row.id);
-    setError(null);
+  async function setStatus(inactive: boolean) {
+    if (!selected) return;
+    setBusy(true);
     try {
-      await api(`/api/admin/locations/${row.id}`, { method: 'DELETE' });
+      await api(`/api/admin/locations/${selected.id}`, {
+        method: 'PATCH',
+        body: { status: inactive ? 'INACTIVE' : 'ACTIVE' },
+      });
+      await load(applied);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not update status');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!selected || deleteConfirm !== selected.name) return;
+    setBusy(true);
+    try {
+      await api(`/api/admin/locations/${selected.id}`, { method: 'DELETE' });
+      setDeleteOpen(false);
+      setSelected(null);
       await load(applied);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not delete this location');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   }
 
-  async function transfer(event: FormEvent<HTMLFormElement>, row: AdminLocation) {
+  async function transfer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const email = String(new FormData(form).get('email') ?? '').trim();
+    if (!selected) return;
+    const email = String(new FormData(event.currentTarget).get('email') ?? '').trim();
     if (!email) return;
-    if (!window.confirm(`Transfer ${row.business.name} and its locations to ${email}?`)) return;
-    setBusyId(row.id);
-    setError(null);
+    if (!window.confirm(`Transfer ${selected.business.name} to ${email}?`)) return;
+    setBusy(true);
     try {
-      await api(`/api/admin/businesses/${row.business.id}/transfer`, {
+      await api(`/api/admin/businesses/${selected.business.id}/transfer`, {
         method: 'POST',
         body: { email },
       });
-      form.reset();
       await load(applied);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not transfer this business');
+      setError(err instanceof ApiError ? err.message : 'Could not transfer');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Locations</h1>
-      <p className="mt-1 text-sm text-muted">
-        Every merchant location — search by business or site name, edit slug and menu mode.
-      </p>
-      <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
+      <PageHeader title="Locations" subtitle="Every merchant site — search, edit slug and menu mode." />
+      <form onSubmit={onSearch} className="mb-4 flex flex-col gap-2 sm:flex-row">
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Location or business name"
-          className="min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base outline-none ring-brand/20 focus:border-brand focus:ring-4 sm:text-sm"
+          className="admin-ctl admin-ctl-form w-full flex-1 px-3 text-sm"
         />
-        <button type="submit" className="min-h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark">
-          Search
-        </button>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          className="admin-ctl admin-ctl-form px-3 text-sm"
+        >
+          <option value="all">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+        <button type="submit" className="admin-btn-primary">Search</button>
       </form>
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-      {loading ? <p className="mt-6 text-sm text-muted">Loading…</p> : null}
-      {!loading && rows.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-8 text-center">
-          <p className="font-semibold">No locations yet</p>
-        </div>
+      {error ? (
+        <p className="mb-4 rounded-[var(--admin-radius-ctl)] bg-[var(--admin-danger-soft)] px-3 py-2 text-sm text-[var(--admin-danger)]">
+          {error}
+        </p>
       ) : null}
-      <div className="mt-4 space-y-3">
-        {rows.map((row) => (
-          <article key={row.id} className="rounded-2xl border border-line bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold">{row.name}</p>
-                <p className="text-sm text-muted">
-                  {row.business.name}
-                  {row.business.owner ? ` · ${row.business.owner.email}` : ''}
-                </p>
-                {row.address ? <p className="mt-1 text-sm text-muted">{row.address}</p> : null}
-                <p className="mt-1 font-mono text-xs text-muted">
-                  {row.googlePlaceId ? `Place ${row.googlePlaceId}` : 'No Google place ID'}
-                  {row.reviewCode ? ` · /r/${row.reviewCode}` : ''}
-                </p>
-                <p className="text-xs text-muted">
-                  Scans {row.scanCount}
-                  {row.metricsRefreshedAt
-                    ? ` · refreshed ${new Date(row.metricsRefreshedAt).toLocaleDateString()}`
-                    : ' · metrics not refreshed'}
-                </p>
+      {loading ? <p className="admin-meta">Loading…</p> : null}
+      <section className="admin-card admin-table-scroll p-4">
+        <table className="w-full min-w-[640px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-[var(--admin-border)] text-xs font-semibold uppercase text-[var(--admin-muted)]">
+              <th className="py-2 pr-3">Location</th>
+              <th className="py-2 pr-3">Owner</th>
+              <th className="py-2 pr-3">Mode</th>
+              <th className="py-2 pr-3">Scans</th>
+              <th className="py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((row) => (
+              <tr
+                key={row.id}
+                className="cursor-pointer border-b border-[var(--admin-border-soft)] hover:bg-[var(--admin-border-soft)]/50"
+                onClick={() => setSelected(row)}
+              >
+                <td className="py-3 pr-3">
+                  <p className="font-semibold">{row.name}</p>
+                  <p className="admin-meta text-xs">
+                    {row.address?.split(',')[0] ?? '—'}
+                    {row.slug ? ` · /go/${row.slug}` : ''}
+                  </p>
+                </td>
+                <td className="py-3 pr-3">
+                  {row.business.owner ? (
+                    <Link
+                      to={`/admin/merchants/${row.business.owner.id}`}
+                      className="font-semibold text-[var(--admin-brand)]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {row.business.owner.name}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="py-3 pr-3">{row.menuMode}</td>
+                <td className="py-3 pr-3">{row.scanCount}</td>
+                <td className="py-3">{row.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <Sheet open={Boolean(selected)} title={selected?.name ?? 'Location'} onClose={() => setSelected(null)}>
+        {selected ? (
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--admin-muted)]">{selected.address ?? 'No address'}</p>
+            <p className="font-mono-admin text-xs text-[var(--admin-muted)]">
+              {selected.googlePlaceId ? `Place ${selected.googlePlaceId}` : 'No place ID'}
+              {selected.reviewCode ? ` · /r/${selected.reviewCode}` : ''}
+            </p>
+            <button type="button" disabled={busy} onClick={() => void refreshMetrics()} className="admin-btn-secondary w-full text-sm">
+              Refresh metrics
+            </button>
+            <p className="admin-meta text-xs">
+              {selected.metricsRefreshedAt
+                ? `Last refreshed ${formatDateTime(selected.metricsRefreshedAt)}`
+                : 'Metrics not refreshed yet'}
+            </p>
+            <label className="block text-sm">
+              <span className="admin-label">Public slug</span>
+              <div className="mt-1 flex">
+                <span className="admin-ctl flex items-center rounded-r-none border-r-0 bg-[var(--admin-border-soft)] px-2 text-xs">/go/</span>
+                <input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="admin-ctl admin-ctl-form w-full rounded-l-none px-3 text-sm"
+                />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted">{row.status}</span>
-            </div>
-            <form
-              className="mt-4 grid gap-2 sm:grid-cols-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const form = event.currentTarget;
-                const slug = String(new FormData(form).get('slug') ?? '');
-                const menuMode = String(new FormData(form).get('menuMode')) as AdminLocation['menuMode'];
-                void saveMeta(row, slug, menuMode);
-              }}
-            >
-              <input
-                name="slug"
-                defaultValue={row.slug ?? ''}
-                placeholder="Public slug"
-                className="min-h-11 rounded-xl border border-line px-3 text-sm"
-              />
+            </label>
+            <label className="block text-sm">
+              <span className="admin-label">Menu mode</span>
               <select
-                name="menuMode"
-                defaultValue={row.menuMode}
-                className="min-h-11 rounded-xl border border-line px-3 text-sm"
+                value={menuMode}
+                onChange={(e) => setMenuMode(e.target.value as AdminLocation['menuMode'])}
+                className="admin-ctl admin-ctl-form mt-1 w-full px-3 text-sm"
               >
                 <option value="FOOD">Food menu</option>
                 <option value="SERVICES">Services</option>
                 <option value="SHOP">Shop catalogue</option>
               </select>
-              <button
-                type="submit"
-                disabled={busyId === row.id}
-                className="min-h-11 rounded-xl border border-line text-sm font-semibold disabled:opacity-50"
-              >
-                Save slug & mode
-              </button>
-            </form>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void refreshMetrics(row)}
-                className="min-h-11 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-50"
-              >
-                Refresh metrics
-              </button>
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void setStatus(row)}
-                className="min-h-11 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-50"
-              >
-                {row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-              </button>
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void remove(row)}
-                className="min-h-11 rounded-xl border border-red-200 px-3 text-sm font-semibold text-red-700 disabled:opacity-50"
-              >
-                Delete
-              </button>
-            </div>
-            <form onSubmit={(event) => void transfer(event, row)} className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Transfer business to email"
-                className="min-h-11 w-full rounded-xl border border-line px-3 text-base outline-none ring-brand/20 focus:border-brand focus:ring-4 sm:text-sm"
-              />
-              <button
-                type="submit"
-                disabled={busyId === row.id}
-                className="min-h-11 shrink-0 rounded-xl bg-ink px-4 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                Transfer
-              </button>
-            </form>
-            <ActivatePlanForLocation compact locationId={row.id} locationName={row.name} />
-          </article>
-        ))}
-      </div>
+            </label>
+            <button type="button" disabled={busy} onClick={() => void saveMeta()} className="admin-btn-primary w-full">
+              Save changes
+            </button>
+            <details className="rounded-[var(--admin-radius-ctl)] border border-[var(--admin-border)] p-3">
+              <summary className="cursor-pointer text-sm font-semibold">Transfer to another merchant</summary>
+              <form onSubmit={(e) => void transfer(e)} className="mt-3 flex flex-col gap-2">
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Owner email"
+                  className="admin-ctl admin-ctl-form px-3 text-sm"
+                />
+                <button type="submit" disabled={busy} className="admin-btn-secondary text-sm">Transfer business</button>
+              </form>
+            </details>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void setStatus(selected.status === 'ACTIVE')}
+              className="admin-btn-secondary w-full text-sm"
+            >
+              {selected.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+            </button>
+            <button type="button" onClick={() => setDeleteOpen(true)} className="admin-btn-danger-outline w-full">
+              Delete location…
+            </button>
+          </div>
+        ) : null}
+      </Sheet>
+
+      <Modal open={deleteOpen} title="Delete location" onClose={() => setDeleteOpen(false)}>
+        <p className="text-sm text-[var(--admin-muted)]">
+          Type <strong>{selected?.name}</strong> to confirm. The business account stays.
+        </p>
+        <input
+          value={deleteConfirm}
+          onChange={(e) => setDeleteConfirm(e.target.value)}
+          className="admin-ctl admin-ctl-form mt-3 w-full px-3 text-sm"
+        />
+        <button
+          type="button"
+          disabled={busy || deleteConfirm !== selected?.name}
+          onClick={() => void remove()}
+          className="admin-btn-danger-outline mt-4 w-full"
+        >
+          Delete permanently
+        </button>
+      </Modal>
     </div>
   );
 }

@@ -1,8 +1,17 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { LocationPicker } from '../../components/admin/LocationPicker';
+import { PageHeader } from '../../components/admin/PageHeader';
+import { Modal } from '../../components/admin/ui/Modal';
 import { api, ApiError } from '../../lib/api';
-import { adminWhen, inr } from '../../lib/admin-ui';
+import { productDisplayName } from '../../lib/admin-products';
+import {
+  formatDateTime,
+  formatINR,
+  isValidUtr,
+  relativeAge,
+  utrDigitsOnly,
+} from '../../lib/admin-ui';
 
 type Plan = {
   id: string;
@@ -12,11 +21,11 @@ type Plan = {
   amountInr: number;
   durationDays: number;
   isActive: boolean;
-  activeLocationCount: number;
 };
 
 type Payment = {
   id: string;
+  kind: string;
   status: string;
   provider: string | null;
   amountInr: number;
@@ -24,47 +33,31 @@ type Payment = {
   locationId: string | null;
   locationName: string | null;
   userEmail: string | null;
+  userId: string | null;
   planName: string | null;
+  planId: string | null;
+  orderId: string | null;
   subscriptionEndDate: string | null;
   createdAt: string;
 };
 
-const PRODUCT_LABEL: Record<string, string> = {
-  QUICK_REVIEW: 'QuickReview',
-  QUICK_MENU: 'QuickCommerce',
-  QUICK_CRM: 'CRM',
-  QUICK_CONNECT: 'QuickConnect',
-  QUICK_DESIGN: 'QuickDesign',
-  QUICK_SCAN: 'QuickScan',
-};
+type Tab = 'pending' | 'approved' | 'rejected' | 'razorpay' | 'all';
 
 export function AdminSubscriptionsPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>('pending');
   const [selectedId, setSelectedId] = useState<string | null>(params.get('payment'));
+  const [utrInput, setUtrInput] = useState('');
+  const [grantOpen, setGrantOpen] = useState(params.get('action') === 'grant');
+  const [manualOpen, setManualOpen] = useState(params.get('action') === 'manual');
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [comp, setComp] = useState({ locationId: '', planId: '', reason: '', durationDays: '30' });
   const [manual, setManual] = useState({ locationId: '', planId: '', provider: 'UPI' as 'UPI' | 'CASH' });
-
-  const selected = payments.find((row) => row.id === selectedId) ?? payments.find((row) => row.status === 'PENDING');
-
-  const planGrid = useMemo(() => {
-    const byProduct = new Map<string, { trial?: Plan; monthly?: Plan }>();
-    for (const plan of plans) {
-      const bucket = byProduct.get(plan.product) ?? {};
-      if (plan.amountInr === 0) bucket.trial = plan;
-      else bucket.monthly = plan;
-      byProduct.set(plan.product, bucket);
-    }
-    return [...byProduct.entries()].map(([product, row]) => ({
-      product,
-      label: PRODUCT_LABEL[product] ?? product,
-      trial: row.trial,
-      monthly: row.monthly,
-    }));
-  }, [plans]);
 
   async function load() {
     const [planRows, payRows] = await Promise.all([
@@ -82,21 +75,49 @@ export function AdminSubscriptionsPage() {
   useEffect(() => {
     const id = params.get('payment');
     if (id) setSelectedId(id);
+    setGrantOpen(params.get('action') === 'grant');
+    setManualOpen(params.get('action') === 'manual');
   }, [params]);
 
-  async function togglePlan(plan: Plan) {
-    if (plan.isActive && !window.confirm(`Stop offering ${plan.name} to new merchants?`)) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/api/admin/plans/${plan.id}`, { method: 'PATCH', body: { isActive: !plan.isActive } });
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not update plan');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const filteredList = useMemo(() => {
+    const sorted = [...payments].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    if (tab === 'pending') return sorted.filter((r) => r.status === 'PENDING');
+    if (tab === 'approved') return sorted.filter((r) => r.status === 'SUCCEEDED');
+    if (tab === 'rejected') return sorted.filter((r) => r.status === 'FAILED');
+    if (tab === 'razorpay') return sorted.filter((r) => r.provider === 'RAZORPAY');
+    return sorted;
+  }, [payments, tab]);
+
+  const selected = payments.find((row) => row.id === selectedId) ?? filteredList[0];
+
+  useEffect(() => {
+    if (!selected) return;
+    const digits = (selected.referenceNote ?? '').replace(/\D/g, '');
+    setUtrInput(digits.length === 12 ? digits : '');
+  }, [selected?.id, selected?.referenceNote]);
+
+  const effectiveUtr =
+    utrInput.trim().length === 12
+      ? utrInput.trim()
+      : (selected?.referenceNote ?? '').replace(/\D/g, '').length === 12
+        ? (selected?.referenceNote ?? '').replace(/\D/g, '')
+        : '';
+  const canApprove =
+    selected?.status === 'PENDING' &&
+    (selected.provider !== 'UPI' || isValidUtr(effectiveUtr));
+
+  const tabCounts = useMemo(
+    () => ({
+      pending: payments.filter((r) => r.status === 'PENDING').length,
+      approved: payments.filter((r) => r.status === 'SUCCEEDED').length,
+      rejected: payments.filter((r) => r.status === 'FAILED').length,
+      razorpay: payments.filter((r) => r.provider === 'RAZORPAY').length,
+      all: payments.length,
+    }),
+    [payments],
+  );
 
   async function approve(paymentId: string, note?: string) {
     setBusy(true);
@@ -111,13 +132,13 @@ export function AdminSubscriptionsPage() {
     }
   }
 
-  async function reject(paymentId: string) {
-    const reason = window.prompt('Reason for rejection (merchant will need to resubmit):');
-    if (!reason || reason.trim().length < 3) return;
+  async function reject(paymentId: string, reason: string) {
     setBusy(true);
     setError(null);
     try {
-      await api(`/api/admin/payments/${paymentId}/reject`, { method: 'POST', body: { reason: reason.trim() } });
+      await api(`/api/admin/payments/${paymentId}/reject`, { method: 'POST', body: { reason } });
+      setRejectOpen(false);
+      setRejectReason('');
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reject payment');
@@ -142,6 +163,7 @@ export function AdminSubscriptionsPage() {
         },
       });
       setComp({ locationId: '', planId: '', reason: '', durationDays: '30' });
+      setGrantOpen(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not grant comp');
@@ -158,6 +180,7 @@ export function AdminSubscriptionsPage() {
     try {
       await api('/api/admin/payments/manual', { method: 'POST', body: manual });
       setManual({ locationId: '', planId: '', provider: 'UPI' });
+      setManualOpen(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create payment');
@@ -166,207 +189,258 @@ export function AdminSubscriptionsPage() {
     }
   }
 
-  const waiting = payments.filter((row) => row.status === 'PENDING');
+  function payingFor(row: Payment) {
+    if (row.kind === 'ORDER' && row.orderId) {
+      return { label: row.planName ?? 'Hardware order', href: `/admin/hardware-orders` };
+    }
+    if (row.planId) {
+      return { label: row.planName ?? 'Plan', href: `/admin/plans` };
+    }
+    return { label: row.planName ?? '—', href: null };
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Payments</h1>
-      <p className="mt-1 max-w-2xl text-sm text-muted">
-        Razorpay activates on its own. UPI and cash wait here until you verify money arrived.
-      </p>
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      <PageHeader
+        title="Payments"
+        subtitle="Razorpay activates on its own. UPI and cash wait here until you verify money arrived."
+        actions={
+          <>
+            <button type="button" className="admin-btn-secondary" onClick={() => setGrantOpen(true)}>
+              Grant free access
+            </button>
+            <button type="button" className="admin-btn-secondary" onClick={() => setManualOpen(true)}>
+              Record UPI / cash
+            </button>
+          </>
+        }
+      />
+      {error ? (
+        <p className="mb-4 rounded-[var(--admin-radius-ctl)] bg-[var(--admin-danger-soft)] px-3 py-2 text-sm text-[var(--admin-danger)]">
+          {error}
+        </p>
+      ) : null}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="rounded-2xl border border-line bg-white p-5">
-          <h2 className="font-bold">To verify ({waiting.length} waiting)</h2>
-          {waiting.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">No UPI or cash payments waiting.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {waiting.map((row) => (
+      <div className="mb-4 flex flex-wrap gap-1 rounded-[var(--admin-radius-ctl)] bg-[var(--admin-border-soft)] p-1">
+        {(
+          [
+            ['pending', `To verify (${tabCounts.pending})`],
+            ['approved', 'Approved'],
+            ['rejected', 'Rejected'],
+            ['razorpay', 'Razorpay'],
+            ['all', 'All'],
+          ] as [Tab, string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+              tab === id ? 'bg-[var(--admin-surface)] shadow-sm' : 'text-[var(--admin-muted)]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <section className="admin-card p-4">
+          <ul className="max-h-[70vh] space-y-2 overflow-y-auto">
+            {filteredList.length === 0 ? (
+              <li className="admin-meta text-sm">Nothing in this tab.</li>
+            ) : (
+              filteredList.map((row) => (
                 <li key={row.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(row.id)}
-                    className={`w-full rounded-xl border px-3 py-3 text-left ${
-                      selected?.id === row.id ? 'border-brand bg-brand/5' : 'border-line hover:border-brand/30'
+                    onClick={() => {
+                      setSelectedId(row.id);
+                      setParams((p) => {
+                        const next = new URLSearchParams(p);
+                        next.set('payment', row.id);
+                        return next;
+                      });
+                    }}
+                    className={`w-full rounded-[var(--admin-radius-ctl)] border px-3 py-3 text-left ${
+                      selected?.id === row.id
+                        ? 'border-[var(--admin-brand)] bg-[var(--admin-brand-soft)]'
+                        : 'border-[var(--admin-border)] hover:border-[var(--admin-brand)]/40'
                     }`}
                   >
-                    <p className="font-semibold">{inr(row.amountInr)} · {row.provider ?? '—'} · Waiting</p>
-                    <p className="text-sm text-muted">{row.planName ?? '—'} · {row.locationName ?? '—'}</p>
-                    <p className="text-xs text-muted">{adminWhen(row.createdAt)}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold">{formatINR(row.amountInr)}</p>
+                      <span className="rounded-full bg-[var(--admin-border-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--admin-muted)]">
+                        {relativeAge(row.createdAt)}
+                      </span>
+                    </div>
+                    <p className="admin-meta text-xs">{row.provider ?? '—'} · {row.status}</p>
                   </button>
                 </li>
-              ))}
-            </ul>
-          )}
+              ))
+            )}
+          </ul>
         </section>
 
-        <section className="rounded-2xl border border-line bg-white p-5">
-          {selected && selected.status === 'PENDING' ? (
+        <section className="admin-card p-5">
+          {selected ? (
             <>
-              <h2 className="font-bold">UPI payment</h2>
-              <p className="mt-1 text-3xl font-extrabold">{inr(selected.amountInr)}</p>
-              <dl className="mt-4 grid gap-2 text-sm">
-                <Row label="Merchant" value={selected.userEmail ?? '—'} />
-                <Row label="Location" value={selected.locationName ?? '—'} />
-                <Row label="Plan" value={selected.planName ?? '—'} />
-                <Row label="UTR / UPI ref" value={selected.referenceNote ?? '—'} />
-                <Row label="Submitted" value={adminWhen(selected.createdAt)} />
+              <p className="text-3xl font-extrabold">{formatINR(selected.amountInr)}</p>
+              <dl className="mt-4 space-y-2 text-sm">
+                <DetailRow label="Merchant">
+                  {selected.userId ? (
+                    <Link to={`/admin/merchants/${selected.userId}`} className="font-semibold text-[var(--admin-brand)]">
+                      {selected.userEmail ?? 'View merchant'}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </DetailRow>
+                <DetailRow label="Location" value={selected.locationName ?? '—'} />
+                <DetailRow label="Paying for">
+                  {(() => {
+                    const target = payingFor(selected);
+                    return target.href ? (
+                      <Link to={target.href} className="font-semibold text-[var(--admin-brand)]">{target.label}</Link>
+                    ) : (
+                      target.label
+                    );
+                  })()}
+                </DetailRow>
+                <DetailRow label="Submitted" value={formatDateTime(selected.createdAt)} />
               </dl>
-              <p className="mt-4 text-sm text-muted">
-                Before approving: match UTR in your bank app, confirm amount, then activate the plan through{' '}
-                {selected.subscriptionEndDate ?? 'the billing period'}.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void approve(selected.id)}
-                  className="min-h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  Approve &amp; activate
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void reject(selected.id)}
-                  className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-50"
-                >
-                  Reject…
-                </button>
-              </div>
+
+              {selected.status === 'PENDING' && selected.provider === 'UPI' && !isValidUtr(effectiveUtr) ? (
+                <div className="admin-pill-warn mt-4 rounded-[var(--admin-radius-ctl)] px-3 py-2 text-sm">
+                  UTR missing — enter the 12-digit bank reference before approving.
+                </div>
+              ) : null}
+
+              {selected.status === 'PENDING' && selected.provider === 'UPI' ? (
+                <label className="mt-4 block text-sm">
+                  <span className="admin-label">UTR (12 digits)</span>
+                  <input
+                    value={utrInput}
+                    onChange={(e) => setUtrInput(utrDigitsOnly(e.target.value))}
+                    inputMode="numeric"
+                    maxLength={12}
+                    className="admin-ctl admin-ctl-form mt-1 w-full px-3 font-mono-admin text-sm"
+                    placeholder="123456789012"
+                  />
+                </label>
+              ) : null}
+
+              {selected.status === 'PENDING' ? (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy || !canApprove}
+                      onClick={() => void approve(selected.id, effectiveUtr || undefined)}
+                      className="admin-btn-primary disabled:opacity-50"
+                    >
+                      Approve &amp; mark paid
+                    </button>
+                    <button type="button" className="admin-btn-secondary text-sm" disabled={busy}>
+                      Ask merchant for UTR
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setRejectOpen(true)}
+                    className="admin-btn-secondary text-sm"
+                  >
+                    Reject…
+                  </button>
+                </div>
+              ) : (
+                <p className="admin-meta mt-4 text-sm">Reference: {selected.referenceNote ?? '—'}</p>
+              )}
             </>
           ) : (
-            <p className="text-sm text-muted">Select a waiting payment to verify.</p>
+            <p className="admin-meta text-sm">Select a payment to review.</p>
           )}
         </section>
       </div>
 
-      <section id="plans" className="mt-8 scroll-mt-6 rounded-2xl border border-line bg-white p-5">
-        <h2 className="font-bold">Plans &amp; prices</h2>
-        <p className="mt-1 text-sm text-muted">One row per product. Toggle availability for new purchases.</p>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 pr-3">Product</th>
-                <th className="py-2 pr-3">Free trial</th>
-                <th className="py-2 pr-3">Monthly</th>
-                <th className="py-2 pr-3">Sold to merchants</th>
-                <th className="py-2">Live</th>
-              </tr>
-            </thead>
-            <tbody>
-              {planGrid.map((row) => (
-                <tr key={row.product} className="border-b border-line last:border-0">
-                  <td className="py-3 pr-3 font-semibold">{row.label}</td>
-                  <td className="py-3 pr-3 text-muted">
-                    {row.trial ? `${row.trial.durationDays} days` : '—'}
-                  </td>
-                  <td className="py-3 pr-3">
-                    {row.monthly ? `${inr(row.monthly.amountInr)} / ${row.monthly.durationDays} d` : '—'}
-                  </td>
-                  <td className="py-3 pr-3">{row.monthly?.activeLocationCount ?? row.trial?.activeLocationCount ?? 0} locations</td>
-                  <td className="py-3">
-                    {row.monthly ? (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void togglePlan(row.monthly!)}
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          row.monthly.isActive ? 'bg-green-100 text-green-800' : 'bg-paper text-muted ring-1 ring-line'
-                        }`}
-                      >
-                        {row.monthly.isActive ? 'On sale' : 'Off'}
-                      </button>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <form onSubmit={onComp} className="rounded-2xl border border-line bg-white p-5">
-          <h2 className="font-bold">Grant free access</h2>
-          <p className="mt-1 text-sm text-muted">Requires a reason and duration. Logged in activity.</p>
-          <div className="mt-4">
-            <LocationPicker value={comp.locationId} onChange={(id) => setComp((v) => ({ ...v, locationId: id }))} />
-          </div>
+      <Modal open={grantOpen} title="Grant free access" onClose={() => setGrantOpen(false)}>
+        <form onSubmit={onComp} className="space-y-3">
+          <LocationPicker value={comp.locationId} onChange={(id) => setComp((v) => ({ ...v, locationId: id }))} />
           <select
             value={comp.planId}
             onChange={(e) => setComp((v) => ({ ...v, planId: e.target.value }))}
-            className="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-sm"
+            className="admin-ctl admin-ctl-form w-full px-3 text-sm"
           >
             <option value="">Choose plan</option>
             {plans.filter((p) => p.isActive).map((plan) => (
               <option key={plan.id} value={plan.id}>
-                {PRODUCT_LABEL[plan.product] ?? plan.product} — {plan.name}
-                {plan.amountInr === 0 ? ' (trial)' : ` (${inr(plan.amountInr)})`}
+                {productDisplayName(plan.product)} — {plan.name}
               </option>
             ))}
           </select>
-          <input
-            value={comp.durationDays}
-            onChange={(e) => setComp((v) => ({ ...v, durationDays: e.target.value }))}
-            type="number"
-            min={1}
-            className="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-sm"
-            placeholder="Duration (days)"
-          />
           <textarea
             value={comp.reason}
             onChange={(e) => setComp((v) => ({ ...v, reason: e.target.value }))}
             rows={2}
-            className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm"
+            className="w-full rounded-[var(--admin-radius-ctl)] border border-[var(--admin-border)] px-3 py-2 text-sm"
             placeholder="Reason (required)"
           />
-          <button type="submit" disabled={busy} className="mt-3 min-h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white disabled:opacity-50">
-            Grant access
-          </button>
+          <button type="submit" disabled={busy} className="admin-btn-primary">Grant access</button>
         </form>
-        <form onSubmit={onManual} className="rounded-2xl border border-line bg-white p-5">
-          <h2 className="font-bold">Record UPI / cash checkout</h2>
-          <div className="mt-4">
-            <LocationPicker value={manual.locationId} onChange={(id) => setManual((v) => ({ ...v, locationId: id }))} />
-          </div>
+      </Modal>
+
+      <Modal open={manualOpen} title="Record UPI / cash" onClose={() => setManualOpen(false)}>
+        <form onSubmit={onManual} className="space-y-3">
+          <LocationPicker value={manual.locationId} onChange={(id) => setManual((v) => ({ ...v, locationId: id }))} />
           <select
             value={manual.planId}
             onChange={(e) => setManual((v) => ({ ...v, planId: e.target.value }))}
-            className="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-sm"
+            className="admin-ctl admin-ctl-form w-full px-3 text-sm"
           >
             <option value="">Choose plan</option>
             {plans.filter((p) => p.amountInr > 0).map((plan) => (
-              <option key={plan.id} value={plan.id}>{plan.name} ({inr(plan.amountInr)})</option>
+              <option key={plan.id} value={plan.id}>{plan.name} ({formatINR(plan.amountInr)})</option>
             ))}
           </select>
-          <select
-            value={manual.provider}
-            onChange={(e) => setManual((v) => ({ ...v, provider: e.target.value as 'UPI' | 'CASH' }))}
-            className="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-sm"
-          >
-            <option value="UPI">UPI</option>
-            <option value="CASH">Cash</option>
-          </select>
-          <button type="submit" disabled={busy} className="mt-3 min-h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white disabled:opacity-50">
-            Create pending payment
-          </button>
+          <button type="submit" disabled={busy} className="admin-btn-primary">Create pending payment</button>
         </form>
-      </div>
+      </Modal>
+
+      <Modal open={rejectOpen} title="Reject payment" onClose={() => setRejectOpen(false)}>
+        <textarea
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          rows={3}
+          className="w-full rounded-[var(--admin-radius-ctl)] border border-[var(--admin-border)] px-3 py-2 text-sm"
+          placeholder="Reason for rejection"
+        />
+        <button
+          type="button"
+          disabled={busy || rejectReason.trim().length < 3}
+          onClick={() => selected && void reject(selected.id, rejectReason.trim())}
+          className="admin-btn-danger-outline mt-3"
+        >
+          Reject payment
+        </button>
+      </Modal>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: ReactNode;
+}) {
   return (
-    <div className="flex justify-between gap-3 border-b border-line/60 pb-2">
-      <dt className="text-muted">{label}</dt>
-      <dd className="font-medium text-right">{value}</dd>
+    <div className="flex justify-between gap-3 border-b border-[var(--admin-border-soft)] pb-2">
+      <dt className="text-[var(--admin-muted)]">{label}</dt>
+      <dd className="font-medium text-right text-[var(--admin-text)]">{children ?? value}</dd>
     </div>
   );
 }
