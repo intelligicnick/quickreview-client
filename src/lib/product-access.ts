@@ -7,10 +7,11 @@ export type ProductAccessLike = {
   pendingPaymentId?: string | null;
 };
 
+/** Matches server billing: plan is active through endDate (inclusive, UTC calendar day). */
 export function isPlanExpired(endDate: string | null | undefined, now = new Date()): boolean {
   if (!endDate) return false;
-  const end = new Date(endDate);
-  return !Number.isNaN(end.getTime()) && end.getTime() < now.getTime();
+  const today = now.toISOString().slice(0, 10);
+  return endDate < today;
 }
 
 /** Merchant-facing plan status — renewal date wins over stale unlocked flags. */
@@ -21,6 +22,18 @@ export function deriveProductPlanStatus(access: ProductAccessLike): ProductPlanS
   if (access.status === 'TRIAL') return 'TRIAL';
   if (access.status === 'EXPIRED') return 'EXPIRED';
   return 'NONE';
+}
+
+export function isProductAccessLive(access: ProductAccessLike): boolean {
+  const status = deriveProductPlanStatus(access);
+  return status === 'ACTIVE' || status === 'TRIAL';
+}
+
+export function productAccessGateReason(access: ProductAccessLike): 'live' | 'expired' | 'inactive' {
+  const status = deriveProductPlanStatus(access);
+  if (status === 'ACTIVE' || status === 'TRIAL') return 'live';
+  if (status === 'EXPIRED') return 'expired';
+  return 'inactive';
 }
 
 export function productStatusLabelFromAccess(access: ProductAccessLike): string {

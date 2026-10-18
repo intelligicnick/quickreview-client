@@ -24,6 +24,8 @@ import { Tabs } from '../components/ui/Tabs';
 import { ReviewGrowthCard, type ReviewGrowthData } from '../components/review/ReviewGrowthCard';
 import { ReviewGuestPreview } from '../components/review/ReviewGuestPreview';
 import { api, ApiError } from '../lib/api';
+import { isProductAccessLive, productAccessGateReason } from '../lib/product-access';
+import { formatIndianPhone } from '../lib/format-phone';
 import { useLocationContext } from '../lib/location-context';
 
 type Tab = 'qr' | 'stats' | 'inbox' | 'settings';
@@ -51,6 +53,7 @@ type Summary = {
     questions: string[];
     keywords: string[];
   };
+  askUnhappyPhone?: boolean;
   stats: {
     pageViews: number;
     stars: number;
@@ -63,6 +66,7 @@ type InboxItem = {
   id: string;
   stars: number | null;
   message: string | null;
+  guestPhone: string | null;
   createdAt: string;
 };
 
@@ -181,6 +185,7 @@ export function QuickReviewPage() {
             (hub.aiReviewQuestions?.length ? hub.aiReviewQuestions : hub.guestReviewQuestions) ?? [];
           setQuestions(qs.length ? [...qs] : ['What did you like most about working with us?']);
           setKeywords([...(hub.aiKeywords ?? [])]);
+          setAskUnhappyPhone(hub.askUnhappyPhone ?? true);
           setError(null);
           setSettingsMsg(null);
         }
@@ -231,6 +236,7 @@ export function QuickReviewPage() {
     setQuestions(qs.length ? [...qs] : ['What did you like most about working with us?']);
     setKeywords([...(summary.aiKeywords ?? [])]);
     setKeywordDraft('');
+    setAskUnhappyPhone(summary.askUnhappyPhone ?? true);
     setSettingsMsg(null);
   }
 
@@ -240,7 +246,7 @@ export function QuickReviewPage() {
     try {
       await api(`/api/locations/${selected.id}/quickreview/settings`, {
         method: 'PATCH',
-        body: { keywords, reviewQuestions },
+        body: { keywords, reviewQuestions, askUnhappyPhone },
       });
       const hub = await api<Summary>(`/api/locations/${selected.id}/quickreview`);
       setSummary(hub);
@@ -248,6 +254,7 @@ export function QuickReviewPage() {
         (hub.aiReviewQuestions?.length ? hub.aiReviewQuestions : hub.guestReviewQuestions) ?? [];
       setQuestions(qs.length ? [...qs] : questions);
       setKeywords([...(hub.aiKeywords ?? [])]);
+      setAskUnhappyPhone(hub.askUnhappyPhone ?? true);
       setSettingsMsg('AI settings saved');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save AI settings');
@@ -264,7 +271,8 @@ export function QuickReviewPage() {
     }
   }
 
-  const unlocked = summary?.reviewUnlocked ?? false;
+  const planGate = summary?.reviewAccess ? productAccessGateReason(summary.reviewAccess) : 'inactive';
+  const unlocked = summary?.reviewAccess ? isProductAccessLive(summary.reviewAccess) : false;
   const pageViews = summary?.stats.pageViews ?? 0;
   const googleOpens = summary?.stats.googleOpens ?? 0;
   const privateFeedback = summary?.stats.privateFeedback ?? 0;
@@ -322,7 +330,10 @@ export function QuickReviewPage() {
           {tab === 'qr' ? (
             <div className="mt-6 space-y-5">
               {!unlocked ? (
-                <LockedQrGate className="max-w-lg" />
+                <LockedQrGate
+                  className="max-w-lg"
+                  reason={planGate === 'expired' ? 'expired' : 'inactive'}
+                />
               ) : (
                 <>
                   <article className="overflow-hidden rounded-2xl border-2 border-brand/40 bg-white shadow-sm">
@@ -621,19 +632,33 @@ export function QuickReviewPage() {
                         <p className="mt-3 rounded-xl bg-paper px-3 py-2.5 text-[15px] leading-relaxed text-ink">
                           {item.message?.trim() ? `"${item.message.trim()}"` : '—'}
                         </p>
-                        <p className="mt-4 text-xs text-muted">No phone or email left by the guest</p>
+                        {item.guestPhone ? (
+                          <p className="mt-4 text-sm">
+                            <span className="text-muted">Phone · </span>
+                            <a
+                              href={`tel:+${item.guestPhone.replace(/\D/g, '').replace(/^(\d{10})$/, '91$1')}`}
+                              className="font-semibold text-brand"
+                            >
+                              {formatIndianPhone(item.guestPhone)}
+                            </a>
+                          </p>
+                        ) : (
+                          <p className="mt-4 text-xs text-muted">No phone left by the guest</p>
+                        )}
                       </li>
                     );
                   })}
                 </ul>
               )}
-              <p className="mt-4 rounded-[10px] bg-blue-50 px-3 py-2 text-sm text-brand-dark">
-                Tip: ask for a phone number in{' '}
-                <button type="button" className="font-semibold underline" onClick={() => setTab('settings')}>
-                  AI settings
-                </button>{' '}
-                so you can call unhappy guests back.
-              </p>
+              {summary.askUnhappyPhone === false ? (
+                <p className="mt-4 rounded-[10px] bg-blue-50 px-3 py-2 text-sm text-brand-dark">
+                  Tip: ask for a phone number in{' '}
+                  <button type="button" className="font-semibold underline" onClick={() => setTab('settings')}>
+                    AI settings
+                  </button>{' '}
+                  so you can call unhappy guests back.
+                </p>
+              ) : null}
             </div>
           ) : null}
 

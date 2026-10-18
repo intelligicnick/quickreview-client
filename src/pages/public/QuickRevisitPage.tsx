@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { Gift, Loader2, PartyPopper, Sparkles } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
+import {
+  GuestPlanBlocked,
+  guestPlanBlockFromApiError,
+  type GuestPlanBlockReason,
+} from '../../components/GuestPlanBlocked';
 import { BrandMark } from '../../components/BrandMark';
 
 type PublicPage = {
@@ -47,6 +52,7 @@ export function QuickRevisitPage() {
   const { code = '' } = useParams();
   const [page, setPage] = useState<PublicPage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [planBlock, setPlanBlock] = useState<GuestPlanBlockReason | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('form');
   const [mobile, setMobile] = useState('');
@@ -60,6 +66,7 @@ export function QuickRevisitPage() {
     void (async () => {
       setLoading(true);
       setError(null);
+      setPlanBlock(null);
       try {
         const data = await api<PublicPage>(
           `/api/public/quick-revisit/${encodeURIComponent(code)}`,
@@ -69,6 +76,7 @@ export function QuickRevisitPage() {
       } catch (err) {
         if (!cancelled) {
           setPage(null);
+          setPlanBlock(guestPlanBlockFromApiError(err));
           setError(
             err instanceof ApiError
               ? err.message
@@ -125,6 +133,10 @@ export function QuickRevisitPage() {
         <Loader2 className="h-6 w-6 animate-spin text-brand" />
       </div>
     );
+  }
+
+  if (planBlock && !page) {
+    return <GuestPlanBlocked reason={planBlock} detail={error} />;
   }
 
   if (error && !page) {

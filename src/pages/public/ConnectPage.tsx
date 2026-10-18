@@ -3,6 +3,11 @@ import { useParams } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { ConnectCardShell } from '../../components/connect/ConnectCardShell';
 import { api, ApiError } from '../../lib/api';
+import {
+  GuestPlanBlocked,
+  guestPlanBlockFromApiError,
+  type GuestPlanBlockReason,
+} from '../../components/GuestPlanBlocked';
 import { downloadConnectVCard } from '../../lib/vcard';
 import { BrandMark } from '../../components/BrandMark';
 
@@ -24,7 +29,7 @@ export function ConnectPage() {
   const { slug = '' } = useParams();
   const [card, setCard] = useState<PublicCard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [locked, setLocked] = useState(false);
+  const [planBlock, setPlanBlock] = useState<GuestPlanBlockReason | null>(null);
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSent, setLeadSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,12 +42,12 @@ export function ConnectPage() {
         const data = await api<PublicCard>(`/api/public/c/${encodeURIComponent(slug)}`, { auth: false });
         if (!cancelled) {
           setCard(data);
-          setLocked(false);
+          setPlanBlock(null);
           setError(null);
         }
       } catch (err) {
         if (!cancelled) {
-          if (err instanceof ApiError && err.status === 402) setLocked(true);
+          setPlanBlock(guestPlanBlockFromApiError(err));
           setError(err instanceof ApiError ? err.message : 'This card is not available');
         }
       }
@@ -71,15 +76,8 @@ export function ConnectPage() {
     }
   }
 
-  if (locked) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-4 text-center">
-        <BrandMark className="h-8" />
-        <p className="mt-6 max-w-sm text-sm text-muted">
-          This digital card is not published yet. The business needs an active QuickConnect plan.
-        </p>
-      </div>
-    );
+  if (planBlock) {
+    return <GuestPlanBlocked reason={planBlock} detail={error} />;
   }
 
   if (!card && !error) {

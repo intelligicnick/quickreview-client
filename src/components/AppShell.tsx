@@ -136,8 +136,8 @@ export function AppShell() {
   }));
 
   return (
-    <div className="flex min-h-dvh flex-wrap bg-ground">
-      <header className="sticky top-0 z-30 w-full border-b border-line bg-white lg:hidden">
+    <div className="flex min-h-dvh flex-col bg-ground lg:flex-row">
+      <header className="sticky top-0 z-30 w-full shrink-0 border-b border-line bg-white lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <BrandMark />
           <button
@@ -149,6 +149,9 @@ export function AppShell() {
           >
             <Menu className="h-[18px] w-[18px] stroke-[1.8]" />
           </button>
+        </div>
+        <div className="border-t border-line px-4 py-2">
+          <LocationSwitcher variant="compact" />
         </div>
       </header>
 
@@ -164,8 +167,8 @@ export function AppShell() {
       <aside
         className={
           menuOpen
-            ? 'fixed inset-y-0 left-0 z-50 flex w-[min(248px,88vw)] flex-[1_1_248px] flex-col border-r border-line bg-white shadow-xl'
-            : 'hidden w-full flex-[1_1_248px] flex-col border-r border-line bg-white lg:flex lg:max-w-[248px]'
+            ? 'fixed inset-y-0 left-0 z-50 flex w-[min(248px,88vw)] flex-col border-r border-line bg-white shadow-xl'
+            : 'hidden shrink-0 flex-col border-r border-line bg-white lg:flex lg:w-[248px]'
         }
       >
         <div className="flex items-center justify-between px-4 py-4">
@@ -223,7 +226,7 @@ export function AppShell() {
         ) : null}
       </aside>
 
-      <div className="min-w-0 flex-[999_1_560px]">
+      <div className="flex min-w-0 flex-1 flex-col">
         <ImpersonationBanner />
         <header className="hidden items-center gap-4 border-b border-line bg-white px-8 py-3.5 lg:flex">
           <label className="relative min-w-0 flex-1 max-w-xl">

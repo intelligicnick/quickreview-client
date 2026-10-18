@@ -37,10 +37,7 @@ export function LocationSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' 
       ? `${selected?.name ?? 'Location'} · ${locationCount} locations`
       : `${selected?.name ?? 'Location'}`;
 
-  const selectClass =
-    variant === 'compact'
-      ? 'min-h-11'
-      : 'absolute inset-0 cursor-pointer opacity-0';
+  const selectClass = 'absolute inset-0 h-full w-full cursor-pointer opacity-0';
 
   return (
     <div className={cn('relative w-full', variant === 'sidebar' ? 'px-3 pb-3' : '')}>

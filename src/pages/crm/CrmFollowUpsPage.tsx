@@ -1,10 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ContactActions } from '../../components/crm/ContactActions';
 import { EmptyState } from '../../components/crm/EmptyState';
 import { formatShortDate, isBeforeToday, isToday } from '../../lib/crm/format';
 import { useCrm } from '../../lib/crm/context';
-import type { Customer, FollowUp } from '../../lib/crm/types';
+import type { FollowUp } from '../../lib/crm/types';
+
+const ROW =
+  'gap-3 border-b border-line px-4 py-3 text-sm last:border-b-0 sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem_auto] sm:items-center';
+
+function bucket(fu: FollowUp): 'today' | 'overdue' | 'upcoming' {
+  if (isToday(fu.dueAt)) return 'today';
+  if (isBeforeToday(fu.dueAt)) return 'overdue';
+  return 'upcoming';
+}
+
+const BUCKET_LABEL = { today: 'Today', overdue: 'Overdue', upcoming: 'Upcoming' } as const;
+const BUCKET_CLASS = {
+  today: 'bg-sky-100 text-sky-900',
+  overdue: 'bg-red-50 text-red-800',
+  upcoming: 'bg-slate-100 text-slate-700',
+} as const;
 
 export function CrmFollowUpsPage() {
   const { state, customerById, completeFollowUp, logCall } = useCrm();
@@ -15,16 +30,20 @@ export function CrmFollowUpsPage() {
     if (id) completeFollowUp(id);
   }, [params, completeFollowUp]);
 
-  const open = state.followUps.filter((f) => !f.completedAt);
-  const today = open.filter((f) => isToday(f.dueAt));
-  const overdue = open.filter((f) => isBeforeToday(f.dueAt) && !isToday(f.dueAt));
-  const upcoming = open.filter((f) => !isToday(f.dueAt) && !isBeforeToday(f.dueAt));
+  const open = useMemo(
+    () =>
+      state.followUps
+        .filter((f) => !f.completedAt)
+        .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()),
+    [state.followUps],
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-2xl font-bold">Follow-ups</h1>
-        <Link to="/app/quickcrm/follow-ups/new" className="btn-gradient w-full px-4 py-2.5 text-center text-sm sm:w-auto">New</Link>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Link to="/app/quickcrm/follow-ups/new" className="btn-gradient px-4 py-2.5 text-center text-sm sm:w-auto">
+          New follow-up
+        </Link>
       </div>
 
       {open.length === 0 ? (
@@ -36,69 +55,60 @@ export function CrmFollowUpsPage() {
           }
         />
       ) : (
-        <>
-          <Section title="Today" items={today} customerById={customerById} onComplete={completeFollowUp} onCall={logCall} />
-          <Section title="Overdue" items={overdue} customerById={customerById} onComplete={completeFollowUp} onCall={logCall} tone="danger" />
-          <Section title="Upcoming" items={upcoming} customerById={customerById} onComplete={completeFollowUp} onCall={logCall} />
-        </>
+        <div className="overflow-hidden rounded-2xl border border-line bg-white">
+          <div className="hidden gap-3 border-b border-line bg-surface-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem_auto]">
+            <span>When</span>
+            <span>Customer</span>
+            <span>Reason</span>
+            <span>Due</span>
+            <span className="text-right">Actions</span>
+          </div>
+          <ul>
+            {open.map((fu) => {
+              const customer = customerById(fu.customerId);
+              if (!customer) return null;
+              const b = bucket(fu);
+              return (
+                <li key={fu.id} className={ROW}>
+                  <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${BUCKET_CLASS[b]}`}>
+                    {BUCKET_LABEL[b]}
+                  </span>
+                  <Link
+                    to={`/app/quickcrm/customers/${customer.id}`}
+                    className="font-semibold text-ink hover:text-brand"
+                  >
+                    {customer.name}
+                  </Link>
+                  <p className="text-muted">{fu.reason}</p>
+                  <p className="text-xs text-muted">{formatShortDate(fu.dueAt)}</p>
+                  <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => logCall(customer.id)}
+                      className="rounded-xl border border-line px-3 py-1.5 text-xs font-semibold"
+                    >
+                      Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => completeFollowUp(fu.id)}
+                      className="rounded-xl bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand-dark"
+                    >
+                      Done
+                    </button>
+                    <Link
+                      to={`/app/quickcrm/follow-ups/new?customer=${customer.id}&reschedule=${fu.id}`}
+                      className="rounded-xl border border-line px-3 py-1.5 text-xs font-semibold"
+                    >
+                      Reschedule
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </div>
-  );
-}
-
-function Section({
-  title,
-  items,
-  customerById,
-  onComplete,
-  onCall,
-  tone,
-}: {
-  title: string;
-  items: FollowUp[];
-  customerById: (id: string) => Customer | undefined;
-  onComplete: (id: string) => void;
-  onCall: (id: string) => void;
-  tone?: 'danger';
-}) {
-  if (!items.length) return null;
-  return (
-    <section>
-      <h2 className="text-xs font-bold uppercase tracking-wide text-muted">{title}</h2>
-      <ul className="mt-3 space-y-3">
-        {items.map((fu) => {
-          const customer = customerById(fu.customerId);
-          if (!customer) return null;
-          return (
-            <li
-              key={fu.id}
-              className={`rounded-2xl border bg-white p-4 ${tone === 'danger' ? 'border-red-200' : 'border-line'}`}
-            >
-              <p className="font-semibold">{customer.name}</p>
-              <p className="text-sm text-muted">{fu.reason}</p>
-              <p className="mt-1 text-xs text-muted">{formatShortDate(fu.dueAt)}</p>
-              <div className="mt-3">
-                <ContactActions mobile={customer.mobile} onCall={() => onCall(customer.id)} compact />
-              </div>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onComplete(fu.id)}
-                  className="flex-1 rounded-xl bg-brand/10 py-2.5 text-sm font-semibold text-brand-dark"
-                >
-                  Complete
-                </button>
-                <Link
-                  to={`/app/quickcrm/follow-ups/new?customer=${customer.id}&reschedule=${fu.id}`}
-                  className="flex-1 rounded-xl border border-line py-2.5 text-center text-sm font-semibold"
-                >
-                  Reschedule
-                </Link>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }

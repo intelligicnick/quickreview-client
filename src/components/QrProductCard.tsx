@@ -15,6 +15,7 @@ export type QrProductCardProps = {
   manageLabel?: string;
   /** Label on the unlock pill when locked (defaults to review wording). */
   unlockLabel?: string;
+  lockReason?: 'expired' | 'inactive';
   onUnlockClick?: () => void;
   unlockTo?: string;
 };
@@ -41,6 +42,7 @@ export function QrProductCard({
   manageHref,
   manageLabel = 'Manage',
   unlockLabel,
+  lockReason,
   onUnlockClick,
   unlockTo,
 }: QrProductCardProps) {
@@ -119,6 +121,7 @@ export function QrProductCard({
       ) : (
         <LockedQrGate
           className="mt-4"
+          reason={lockReason}
           unlockLabel={unlockLabel ?? defaultUnlock}
           onUnlockClick={onUnlockClick}
           unlockTo={unlockTo}

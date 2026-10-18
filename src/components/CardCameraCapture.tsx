@@ -106,23 +106,26 @@ export function CardCameraCapture({ active, sideLabel, onCapture, onError }: Car
 
   return (
     <div className="mt-4">
-      <p className="text-sm font-semibold">{sideLabel}</p>
-      <div className="relative mt-2 overflow-hidden rounded-2xl bg-ink">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="aspect-[4/3] w-full object-cover"
-        />
-        {starting ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink/50">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
+      <p className="mb-2 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+        {sideLabel}
+      </p>
+      <div className="mx-auto w-full max-w-[440px]">
+        <div className="relative overflow-hidden rounded-2xl bg-ink">
+          <video ref={videoRef} playsInline muted className="aspect-[1.75/1] w-full object-cover" />
+          {starting ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-ink/50">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+          ) : null}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6" aria-hidden>
+            <div className="relative h-full w-full max-h-[85%] max-w-full">
+              <span className="absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2 border-white" />
+              <span className="absolute right-0 top-0 h-6 w-6 border-r-2 border-t-2 border-white" />
+              <span className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-white" />
+              <span className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-white" />
+            </div>
           </div>
-        ) : null}
-        <div
-          className="pointer-events-none absolute inset-6 rounded-xl border-2 border-dashed border-white/70"
-          aria-hidden
-        />
+        </div>
       </div>
       <canvas ref={canvasRef} className="hidden" />
 
@@ -130,18 +133,18 @@ export function CardCameraCapture({ active, sideLabel, onCapture, onError }: Car
         type="button"
         disabled={starting || !active}
         onClick={() => snapFromVideo()}
-        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-white disabled:opacity-60"
+        className="mx-auto mt-4 flex min-h-11 w-full max-w-[440px] items-center justify-center gap-2 rounded-[10px] bg-brand text-sm font-semibold text-white disabled:opacity-60"
       >
-        <Camera className="h-4 w-4" />
+        <Camera className="h-[18px] w-[18px] stroke-[1.8]" aria-hidden />
         Capture photo
       </button>
 
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className="mt-2 inline-flex w-full items-center justify-center gap-2 py-2 text-sm font-semibold text-muted"
+        className="mx-auto mt-2 flex w-full max-w-[440px] items-center justify-center gap-2 py-2 text-sm font-semibold text-muted"
       >
-        <ImagePlus className="h-4 w-4" />
+        <ImagePlus className="h-[18px] w-[18px] stroke-[1.8]" aria-hidden />
         Upload from gallery
       </button>
       <input
@@ -151,6 +154,7 @@ export function CardCameraCapture({ active, sideLabel, onCapture, onError }: Car
         className="hidden"
         onChange={(e) => onFilePicked(e.target.files?.[0])}
       />
+      <p className="mt-3 text-center text-xs text-muted">OCR runs in your browser — nothing is uploaded until you save to CRM.</p>
     </div>
   );
 }

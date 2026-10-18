@@ -55,7 +55,11 @@ export function DashboardPage() {
   const attention = useMemo(() => {
     if (!selected || !billing) return [];
     const items: AttentionItem[] = [];
-    const products: { key: string; name: string; access: { unlocked: boolean; status: string } }[] = [
+    const products: {
+      key: string;
+      name: string;
+      access: { unlocked: boolean; status: string; endDate: string | null };
+    }[] = [
       { key: 'review', name: 'QuickReview', access: billing.quickReview },
       { key: 'menu', name: 'QuickCommerce', access: billing.quickMenu },
       { key: 'crm', name: 'CRM', access: billing.quickCrm },
@@ -67,7 +71,7 @@ export function DashboardPage() {
       const plan = deriveProductPlanStatus({
         unlocked: p.access.unlocked,
         status: p.access.status,
-        endDate: null,
+        endDate: p.access.endDate,
       });
       if (plan === 'EXPIRED') {
         items.push({

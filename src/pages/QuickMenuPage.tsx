@@ -20,6 +20,7 @@ import { QuickCommerceOnboarding } from '../components/quickcommerce/QuickCommer
 import { QrProductCard } from '../components/QrProductCard';
 import { productStatusLabel } from '../lib/location-workspace';
 import { api, ApiError } from '../lib/api';
+import { isProductAccessLive, productAccessGateReason } from '../lib/product-access';
 import { useLocationContext } from '../lib/location-context';
 import {
   formatMenuItemPrice,
@@ -97,7 +98,7 @@ type Hub = {
   publicPath: string;
   publicUrl: string;
   menuUnlocked: boolean;
-  menuAccess: { status: string };
+  menuAccess: { unlocked: boolean; status: string; endDate?: string | null };
   copy: MenuCopy;
   priceVariantScope: 'category' | 'product';
   imagePlaceholder: MenuImagePlaceholder;
@@ -438,7 +439,8 @@ export function QuickMenuPage() {
     }
   }
 
-  const unlocked = hub?.menuUnlocked ?? false;
+  const planGate = hub?.menuAccess ? productAccessGateReason(hub.menuAccess) : 'inactive';
+  const unlocked = hub?.menuAccess ? isProductAccessLive(hub.menuAccess) : false;
   const copy = hub?.copy;
   const imagePlaceholder = hub?.imagePlaceholder ?? 'retail';
   const categoryScoped = hub?.priceVariantScope === 'category';
@@ -592,6 +594,7 @@ export function QuickMenuPage() {
                     publicUrl={hub.publicUrl}
                     publicPath={hub.publicPath}
                     unlocked={unlocked}
+                    lockReason={planGate === 'expired' ? 'expired' : 'inactive'}
                     statusLabel={productStatusLabel(unlocked, hub.menuAccess.status)}
                     manageHref="/app/qr"
                     manageLabel="All QR codes"

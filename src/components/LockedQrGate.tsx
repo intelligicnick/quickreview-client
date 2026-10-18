@@ -8,6 +8,8 @@ const LOCKED_QR_VALUE = 'https://quickreview.app/plan-required';
 type LockedQrGateProps = {
   /** Shown blurred in the fake link field (not copied or used for QR). */
   linkPreview?: string;
+  /** When set, overrides the default unlock pill copy. */
+  reason?: 'expired' | 'inactive';
   unlockLabel?: string;
   /** When set, pill runs this instead of linking to Subscription. */
   onUnlockClick?: () => void;
@@ -17,11 +19,17 @@ type LockedQrGateProps = {
 
 export function LockedQrGate({
   linkPreview = 'https://app.quickreview.co.in/r/••••••••',
-  unlockLabel = 'Select a plan to unlock QR and Review link',
+  reason,
+  unlockLabel,
   onUnlockClick,
   unlockTo = '/app/subscription',
   className = '',
 }: LockedQrGateProps) {
+  const defaultLabel =
+    reason === 'expired'
+      ? 'Plan expired — renew to unlock QR & link'
+      : 'Select a plan to unlock QR and Review link';
+  const pillLabel = unlockLabel ?? defaultLabel;
   const pillClass =
     'max-w-[min(100%,20rem)] rounded-full bg-brand px-5 py-3 text-center text-sm font-semibold leading-snug text-white shadow-[0_8px_24px_rgba(26,109,255,0.35)] transition-colors hover:bg-brand-dark';
   return (
@@ -63,11 +71,11 @@ export function LockedQrGate({
       <div className="absolute inset-0 flex items-center justify-center bg-white/25 p-4 backdrop-blur-[2px]">
         {onUnlockClick ? (
           <button type="button" onClick={onUnlockClick} className={pillClass}>
-            {unlockLabel}
+            {pillLabel}
           </button>
         ) : (
           <Link to={unlockTo} className={pillClass}>
-            {unlockLabel}
+            {pillLabel}
           </Link>
         )}
       </div>

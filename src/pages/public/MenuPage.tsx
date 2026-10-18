@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Repeat, Star } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
+import {
+  GuestPlanBlocked,
+  guestPlanBlockFromApiError,
+  type GuestPlanBlockReason,
+} from '../../components/GuestPlanBlocked';
 import { BrandMark } from '../../components/BrandMark';
 import { MenuCatalogBanner } from '../../components/menu/MenuCatalogBanner';
 import { MenuCatalogBrowseToolbar } from '../../components/menu/MenuCatalogBrowseToolbar';
@@ -52,7 +57,7 @@ export function MenuPage() {
   const { slug = '' } = useParams();
   const [menu, setMenu] = useState<PublicMenu | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [locked, setLocked] = useState(false);
+  const [planBlock, setPlanBlock] = useState<GuestPlanBlockReason | null>(null);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
 
@@ -63,11 +68,11 @@ export function MenuPage() {
         const data = await api<PublicMenu>(`/api/public/menu/${encodeURIComponent(slug)}`, { auth: false });
         if (!cancelled) {
           setMenu(data);
-          setLocked(false);
+          setPlanBlock(null);
         }
       } catch (err) {
         if (!cancelled) {
-          if (err instanceof ApiError && err.status === 402) setLocked(true);
+          setPlanBlock(guestPlanBlockFromApiError(err));
           setError(err instanceof ApiError ? err.message : 'This menu is not available');
         }
       }
@@ -100,15 +105,8 @@ export function MenuPage() {
 
   const featuredTabLabel = menu?.copy.featuredTabLabel ?? "Today's Special";
 
-  if (locked) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-paper px-4 text-center">
-        <BrandMark className="h-8" />
-        <p className="mt-6 max-w-sm text-sm text-muted">
-          This page is not published yet. The business needs an active Quick Commerce plan.
-        </p>
-      </div>
-    );
+  if (planBlock) {
+    return <GuestPlanBlocked reason={planBlock} detail={error} />;
   }
 
   if (!menu && !error) {

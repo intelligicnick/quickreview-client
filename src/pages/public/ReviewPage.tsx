@@ -9,7 +9,14 @@ import {
   Star,
 } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
+import {
+  GuestPlanBlocked,
+  guestPlanBlockFromApiError,
+  type GuestPlanBlockReason,
+} from '../../components/GuestPlanBlocked';
+import { Field } from '../../components/ui/Field';
 import { RateCard } from '../../components/review/RateCard';
+import { normalizeIndianPhoneInput } from '../../lib/format-phone';
 
 type PublicReview = {
   code: string;
@@ -20,6 +27,7 @@ type PublicReview = {
   googleReviewUrl: string | null;
   reviewQuestions: string[];
   answerOptionsPerQuestion?: string[][];
+  askUnhappyPhone?: boolean;
 };
 
 type Step = 'rate' | 'generating' | 'draft' | 'thank-you';
@@ -53,7 +61,6 @@ const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
   ['Friends & family', 'Colleagues', 'Anyone nearby'],
 ];
 
-const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
 const MAX_FRAME_GENERATIONS = 2;
 
 function frameSessionIdForCode(reviewCode: string): string {
@@ -83,7 +90,7 @@ export function ReviewPage() {
   const { code = '' } = useParams();
   const [shop, setShop] = useState<PublicReview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [errorTitle, setErrorTitle] = useState('Unavailable');
+  const [planBlock, setPlanBlock] = useState<GuestPlanBlockReason | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('rate');
   const [hovered, setHovered] = useState(0);
@@ -94,6 +101,7 @@ export function ReviewPage() {
   const [draftError, setDraftError] = useState<string | null>(null);
   const [messageIndex, setMessageIndex] = useState(0);
   const [privateFeedbackText, setPrivateFeedbackText] = useState('');
+  const [privateGuestPhone, setPrivateGuestPhone] = useState('');
   const [privateFeedbackError, setPrivateFeedbackError] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [generationsRemaining, setGenerationsRemaining] = useState(MAX_FRAME_GENERATIONS);
@@ -105,17 +113,17 @@ export function ReviewPage() {
     void (async () => {
       setLoading(true);
       setError(null);
-      setErrorTitle('Unavailable');
+      setPlanBlock(null);
       try {
         const data = await api<PublicReview>(`/api/public/r/${encodeURIComponent(code)}`, { auth: false });
         if (!cancelled) setShop(data);
       } catch (err) {
         if (!cancelled) {
-          if (err instanceof ApiError && err.status === 402) {
-            setErrorTitle(SUBSCRIPTION_UNAVAILABLE_TITLE);
-            setError(err.message || 'This review page is not active yet.');
+          const block = guestPlanBlockFromApiError(err);
+          if (block) {
+            setPlanBlock(block);
+            setError(err instanceof ApiError ? err.message : 'This review page is not available');
           } else {
-            setErrorTitle('Unavailable');
             setError(err instanceof ApiError ? err.message : 'This review link is not available');
           }
           setShop(null);
@@ -140,7 +148,7 @@ export function ReviewPage() {
 
   async function record(
     type: 'star' | 'private' | 'google_open',
-    payload: { stars: number; message?: string },
+    payload: { stars: number; message?: string; guestPhone?: string },
   ) {
     await api(`/api/public/r/${encodeURIComponent(code)}/events`, {
       method: 'POST',
@@ -253,8 +261,15 @@ export function ReviewPage() {
     }
     setSubmittingFeedback(true);
     setPrivateFeedbackError(null);
+    const phoneDigits = privateGuestPhone.replace(/\D/g, '');
+    const guestPhone =
+      shop.askUnhappyPhone !== false && phoneDigits.length >= 10
+        ? phoneDigits.startsWith('91')
+          ? phoneDigits.slice(0, 12)
+          : phoneDigits.slice(0, 10)
+        : undefined;
     try {
-      await record('private', { stars: selected, message: trimmed });
+      await record('private', { stars: selected, message: trimmed, guestPhone });
       setStep('thank-you');
     } catch (err) {
       setPrivateFeedbackError(
@@ -345,27 +360,14 @@ export function ReviewPage() {
           <p className="animate-fade-up flex flex-1 items-center justify-center text-muted sm:flex-none">
             Loading…
           </p>
+        ) : planBlock && !shop ? (
+          <GuestPlanBlocked reason={planBlock} detail={error} />
         ) : error && !shop ? (
           <div className="animate-fade-up w-full sm:w-auto">
             <RateCard>
               <div className="text-center">
-                <h1 className="font-display text-2xl font-bold tracking-tight text-ink">{errorTitle}</h1>
-                {errorTitle === SUBSCRIPTION_UNAVAILABLE_TITLE ? (
-                  <div
-                    className="relative mx-auto mt-5 flex h-40 w-full max-w-[260px] items-center justify-center overflow-hidden rounded-2xl border border-line bg-paper"
-                    aria-hidden
-                  >
-                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,#e2e8f0_0,#e2e8f0_2px,transparent_2px,transparent_10px)] opacity-70 blur-[1px]" />
-                    <p className="relative px-4 text-sm font-semibold text-muted">Review page inactive</p>
-                  </div>
-                ) : null}
+                <h1 className="font-display text-2xl font-bold tracking-tight text-ink">Unavailable</h1>
                 <p className="mt-3 text-sm text-muted">{error}</p>
-                {errorTitle === SUBSCRIPTION_UNAVAILABLE_TITLE ? (
-                  <p className="mt-3 text-sm text-muted">
-                    If you are the business owner, activate QuickReview in your merchant panel under{' '}
-                    <span className="font-semibold text-brand">Subscription</span>.
-                  </p>
-                ) : null}
               </div>
             </RateCard>
           </div>
@@ -539,6 +541,18 @@ export function ReviewPage() {
                       Only {shop.name} sees this — nothing posts to Google.
                     </p>
                   </div>
+                  {shop.askUnhappyPhone !== false ? (
+                    <Field
+                      className={privateFeedbackOpen ? 'mt-2 shrink-0' : 'mt-4'}
+                      label="Your phone (optional)"
+                      prefix="+91"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="So they can call you back"
+                      value={privateGuestPhone}
+                      onChange={(e) => setPrivateGuestPhone(normalizeIndianPhoneInput(e.target.value))}
+                    />
+                  ) : null}
                   <label htmlFor="private-feedback" className="sr-only">Private feedback</label>
                   <textarea
                     id="private-feedback"

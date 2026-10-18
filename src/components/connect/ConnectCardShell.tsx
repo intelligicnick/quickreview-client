@@ -1,4 +1,5 @@
 import { ExternalLink, Mail, Phone, UserPlus, UserRoundPlus } from 'lucide-react';
+import { initialsFromName } from '../../lib/initials';
 import { BrandMark } from '../BrandMark';
 import { MobileScreenFrame } from '../MobileScreenFrame';
 
@@ -21,8 +22,7 @@ export type ConnectCardLink = {
   url: string;
 };
 
-const COVER_FALLBACK =
-  'linear-gradient(135deg, rgba(107,47,213,0.85) 0%, rgba(56,189,248,0.75) 100%)';
+const COVER_FALLBACK = '#EAF1FF';
 
 function telHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
@@ -51,7 +51,7 @@ export function ConnectCardShell({
   className = '',
 }: Props) {
   const isPreview = mode === 'preview';
-  const initial = profile.displayName.trim().charAt(0).toUpperCase() || '?';
+  const initial = initialsFromName(profile.displayName || '?');
   const canCall = Boolean(profile.phone?.trim());
   const canEmail = Boolean(profile.email?.trim());
   const canWhatsapp = Boolean(profile.whatsappPhone?.trim());
@@ -67,7 +67,7 @@ export function ConnectCardShell({
                 className="aspect-[2.8/1] w-full object-cover"
               />
             ) : (
-              <div className="aspect-[2.8/1] w-full" style={{ background: COVER_FALLBACK }} aria-hidden />
+              <div className="aspect-[2.8/1] w-full bg-blue-50" style={{ background: COVER_FALLBACK }} aria-hidden />
             )}
           </header>
 
@@ -80,7 +80,7 @@ export function ConnectCardShell({
               />
             ) : (
               <div
-                className="flex h-[4.25rem] w-[4.25rem] shrink-0 -mt-8 items-center justify-center rounded-2xl border-[3px] border-white bg-slate-100 text-xl font-semibold text-slate-400 shadow-[0_6px_14px_rgba(15,23,42,0.15)]"
+                className="flex h-[4.25rem] w-[4.25rem] shrink-0 -mt-8 items-center justify-center rounded-2xl border-[3px] border-white bg-blue-50 text-sm font-bold text-brand-dark shadow-[0_6px_14px_rgba(15,23,42,0.15)]"
               >
                 {initial}
               </div>

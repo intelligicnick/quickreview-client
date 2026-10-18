@@ -5,6 +5,7 @@ import { QrCodePreview } from '../components/QrCodePreview';
 import { QRCard } from '../components/ui/QRCard';
 import { Button } from '../components/ui/Button';
 import { api, ApiError } from '../lib/api';
+import { isProductAccessLive } from '../lib/product-access';
 import { loadWorkspaceSnapshot } from '../lib/location-workspace';
 import { useLocationContext } from '../lib/location-context';
 
@@ -119,7 +120,7 @@ export function QrCodesPage() {
                 subtitle="Star ratings & Google reviews"
                 publicUrl={review.publicUrl}
                 publicPath={review.publicPath}
-                unlocked={review.reviewUnlocked}
+                unlocked={isProductAccessLive(review.reviewAccess)}
                 manageHref="/app/quickreview"
                 manageLabel="Reviews & inbox"
               />
@@ -130,7 +131,7 @@ export function QrCodesPage() {
                 subtitle="Catalogue + Quick Revisit"
                 publicUrl={menu.publicUrl}
                 publicPath={menu.publicPath}
-                unlocked={menu.menuUnlocked}
+                unlocked={isProductAccessLive(menu.menuAccess)}
                 manageHref="/app/quickcommerce"
                 manageLabel="Edit catalogue"
               />
@@ -141,7 +142,7 @@ export function QrCodesPage() {
                 subtitle="Digital business card"
                 publicUrl={connect.publicUrl}
                 publicPath={connect.publicPath}
-                unlocked={connect.connectUnlocked}
+                unlocked={isProductAccessLive(connect.connectAccess)}
                 manageHref="/app/quickconnect"
                 manageLabel="Edit card"
               />

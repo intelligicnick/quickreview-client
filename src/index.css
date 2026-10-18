@@ -12,6 +12,7 @@
   --color-brand-dark: var(--blue-700);
   --color-gold: var(--star);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-ground: var(--ground);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -22,6 +23,7 @@
   --color-red-700: var(--red-700);
   --color-amber-50: var(--amber-50);
   --color-amber-800: var(--amber-800);
+  --color-amber-line: var(--amber-line);
   --color-orange: var(--orange);
 }
 
