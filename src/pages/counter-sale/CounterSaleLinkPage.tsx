@@ -8,6 +8,7 @@ import { StandeeQrScanner, type StandeeScanOutcome } from '../../components/coun
 import { playCounterSaleScanSound } from '../../lib/counter-sale-scan-sound';
 import {
   STANDEE_CODE_LEN,
+  isValidStandeeCode,
   normalizeStandeeCode,
   qrLookupMessage,
   type QrLookupStatus,
@@ -72,6 +73,7 @@ export function CounterSaleLinkPage() {
   const [success, setSuccess] = useState<LinkSuccessSummary | null>(null);
 
   const lookupBusy = useRef(false);
+  const skipAutoLookupRef = useRef(false);
   const lookupQrRef = useRef<(code: string, playSound?: boolean) => Promise<StandeeScanOutcome | void>>(
     async () => {},
   );
@@ -120,7 +122,11 @@ export function CounterSaleLinkPage() {
       return;
     } catch (err) {
       setQrStatus('not_found');
-      setQrMessage(err instanceof CounterSaleApiError ? err.message : 'Lookup failed');
+      if (err instanceof CounterSaleApiError && err.status === 401) {
+        setQrMessage('Session expired — sign out and sign in again.');
+      } else {
+        setQrMessage(err instanceof CounterSaleApiError ? err.message : 'Lookup failed');
+      }
       if (playSound) playCounterSaleScanSound('not_found');
       return 'stop';
     } finally {
@@ -131,6 +137,10 @@ export function CounterSaleLinkPage() {
   lookupQrRef.current = lookupQr;
 
   useEffect(() => {
+    if (skipAutoLookupRef.current) {
+      skipAutoLookupRef.current = false;
+      return;
+    }
     if (qrCode.length !== STANDEE_CODE_LEN) {
       if (qrCode.length === 0) {
         setQrStatus(null);
@@ -165,13 +175,10 @@ export function CounterSaleLinkPage() {
 
   const handleScannedRaw = useCallback(async (raw: string) => {
     const code = normalizeStandeeCode(raw);
+    if (!isValidStandeeCode(code)) return 'continue';
+    skipAutoLookupRef.current = true;
     setQrCode(code);
-    if (code.length < STANDEE_CODE_LEN) {
-      setQrStatus(null);
-      setQrMessage('QR too short — enter the full standee code manually.');
-      return 'stop';
-    }
-    return lookupQrRef.current(code, true);
+    return lookupQrRef.current(raw, true);
   }, []);
 
   async function linkStandee() {
