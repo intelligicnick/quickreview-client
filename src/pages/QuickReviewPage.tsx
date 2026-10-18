@@ -256,7 +256,6 @@ export function QuickReviewPage() {
   }
 
   const unlocked = summary?.reviewUnlocked ?? false;
-  const setupDone = Boolean(summary?.googleReviewUrl);
   const pageViews = summary?.stats.pageViews ?? 0;
   const googleOpens = summary?.stats.googleOpens ?? 0;
   const privateFeedback = summary?.stats.privateFeedback ?? 0;
@@ -754,10 +753,7 @@ export function QuickReviewPage() {
               </section>
 
               <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink px-4 py-3 lg:left-72">
-                <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-white/80">
-                    {setupDone ? 'Google link connected' : 'Connect Google review link'} · Gemini drafting on
-                  </p>
+                <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-end gap-3">
                   <div className="flex gap-2">
                     <button type="button" className="rounded-xl px-4 py-2 text-sm font-semibold text-white" onClick={resetSettingsDraft}>
                       Discard
