@@ -1,4 +1,4 @@
-import QRCode from 'react-qr-code';
+import { QrBrandedCode } from './QrBrandedCode';
 
 type QrCodePreviewProps = {
   value: string;
@@ -15,7 +15,7 @@ export function QrCodePreview({ value, size = 128, label }: QrCodePreviewProps) 
       role="img"
       aria-label={ariaLabel}
     >
-      <QRCode value={value} size={size} level="M" bgColor="#ffffff" fgColor="#0f172a" />
+      <QrBrandedCode value={value} size={size} />
     </div>
   );
 }

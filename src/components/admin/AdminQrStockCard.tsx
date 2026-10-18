@@ -1,5 +1,5 @@
-import QRCode from 'react-qr-code';
 import { Link } from 'react-router-dom';
+import { QrBrandedCode } from '../QrBrandedCode';
 
 export type QrStockRow = {
   id: string;
@@ -86,13 +86,8 @@ export function AdminQrStockCard({
         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
       </div>
 
-      <div className="relative mx-auto mt-3 rounded-[var(--admin-radius-ctl)] border border-[var(--admin-border)] bg-white p-3">
-        <QRCode value={value} size={148} level="H" bgColor="#ffffff" fgColor="#101828" />
-        <img
-          src="/brand/quickreview-icon.png"
-          alt=""
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[34px] w-[34px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white object-contain"
-        />
+      <div className="mx-auto mt-3 rounded-[var(--admin-radius-ctl)] border border-[var(--admin-border)] bg-white p-3">
+        <QrBrandedCode value={value} size={148} />
       </div>
 
       <p className="font-mono-admin mt-3 text-center text-[20px] font-semibold tracking-[0.12em]">{row.code}</p>
