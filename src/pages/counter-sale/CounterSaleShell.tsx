@@ -1,23 +1,11 @@
-import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { BrandIcon } from '../../components/BrandIcon';
 import { IconSignOut } from '../../components/counter-sale/icons';
-import {
-  getCounterSaleToken,
-  setCounterSaleToken,
-  takeCounterSaleTokenFromHash,
-} from '../../lib/counter-sale-api';
+import { getCounterSaleToken, setCounterSaleToken } from '../../lib/counter-sale-api';
 
 export function CounterSaleShell() {
   const navigate = useNavigate();
   const signedIn = Boolean(getCounterSaleToken());
-
-  useEffect(() => {
-    const token = takeCounterSaleTokenFromHash();
-    if (!token) return;
-    setCounterSaleToken(token);
-    navigate('/counter-sale/link', { replace: true });
-  }, [navigate]);
 
   function logout() {
     setCounterSaleToken(null);

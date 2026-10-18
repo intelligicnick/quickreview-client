@@ -11,8 +11,9 @@ import {
   counterSaleApi,
   CounterSaleApiError,
   getCounterSaleToken,
+  redeemCounterSaleSessionTicket,
   setCounterSaleToken,
-  takeCounterSaleTokenFromHash,
+  takeCounterSaleSessionTicketFromQuery,
 } from '../../lib/counter-sale-api';
 
 type PlaceRow = {
@@ -40,17 +41,28 @@ function normalizeStandeeCode(raw: string): string {
   return parseQrInput(raw).slice(0, STANDEE_CODE_LEN);
 }
 
-function resolveAgentSessionToken(): string | null {
-  const fromHash = takeCounterSaleTokenFromHash();
-  if (fromHash) {
-    setCounterSaleToken(fromHash);
-    return fromHash;
-  }
-  return getCounterSaleToken();
-}
-
 export function CounterSaleLinkPage() {
-  const [token] = useState(() => resolveAgentSessionToken());
+  const [token, setToken] = useState<string | null>(() => getCounterSaleToken());
+  const [sessionBootstrapping, setSessionBootstrapping] = useState(
+    () => Boolean(new URLSearchParams(window.location.search).get('ticket')),
+  );
+
+  useEffect(() => {
+    const ticket = takeCounterSaleSessionTicketFromQuery();
+    if (!ticket) {
+      setToken(getCounterSaleToken());
+      setSessionBootstrapping(false);
+      return;
+    }
+    setSessionBootstrapping(true);
+    void redeemCounterSaleSessionTicket(ticket)
+      .then((accessToken) => {
+        setCounterSaleToken(accessToken);
+        setToken(accessToken);
+      })
+      .catch(() => setToken(null))
+      .finally(() => setSessionBootstrapping(false));
+  }, []);
 
   const [qrCode, setQrCode] = useState('');
   const [qrStatus, setQrStatus] = useState<QrLookup['status'] | null>(null);
@@ -147,14 +159,16 @@ export function CounterSaleLinkPage() {
     setBusy(true);
     setError(null);
     try {
-      await counterSaleApi('/api/counter-sale/provisions', {
+      const data = await counterSaleApi<{
+        summary: LinkSuccessSummary;
+        business: { name: string };
+      }>('/api/counter-sale/provisions', {
         method: 'POST',
         body: { qrCode, placeId: selectedPlaceId, service },
       });
       setSuccess({
-        qrCode,
-        businessName: selectedPlace?.name ?? 'Business',
-        service,
+        ...data.summary,
+        businessName: data.summary.businessName || data.business.name || selectedPlace?.name || 'Business',
       });
     } catch (err) {
       setError(err instanceof CounterSaleApiError ? err.message : 'Link failed');
@@ -173,6 +187,10 @@ export function CounterSaleLinkPage() {
     setSelectedPlaceId(null);
     setService(null);
     setError(null);
+  }
+
+  if (sessionBootstrapping) {
+    return <p className="px-4 py-6 text-sm text-[#5B6474]">Signing in…</p>;
   }
 
   if (!token) {

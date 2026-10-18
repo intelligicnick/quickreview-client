@@ -120,11 +120,11 @@ export function AdminCounterSalePage() {
           await reload();
         }}
         onLoginAsAgent={async (agentId) => {
-          const data = await api<{ accessToken: string }>(
+          const data = await api<{ ticket: string }>(
             `/api/admin/counter-sale/agents/${agentId}/session`,
             { method: 'POST' },
           );
-          const url = `${window.location.origin}/counter-sale/link#t=${encodeURIComponent(data.accessToken)}`;
+          const url = `${window.location.origin}/counter-sale/link?ticket=${encodeURIComponent(data.ticket)}`;
           window.open(url, '_blank', 'noopener,noreferrer');
         }}
         onChangeAgentPin={async (agentId, pin) => {

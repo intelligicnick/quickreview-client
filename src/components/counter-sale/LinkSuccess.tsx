@@ -5,6 +5,8 @@ export type LinkSuccessSummary = {
   qrCode: string;
   businessName: string;
   service: 'review' | 'menu';
+  targetUrl: string | null;
+  googleReviewUrl: string | null;
 };
 
 function serviceLabel(service: 'review' | 'menu') {
@@ -38,10 +40,30 @@ export function LinkSuccess({ summary, onLinkAnother }: { summary: LinkSuccessSu
             <dt className="text-xs font-medium uppercase tracking-wide text-[#5B6474]">Business</dt>
             <dd className="mt-1 text-[15px] font-semibold text-[#0F172A]">{summary.businessName}</dd>
           </div>
-          <div className="py-3">
+          <div className="border-b border-[#E3E8EF] py-3 last:border-0 last:pb-0">
             <dt className="text-xs font-medium uppercase tracking-wide text-[#5B6474]">Service</dt>
             <dd className="mt-1 text-[15px] font-semibold text-[#0F172A]">{serviceLabel(summary.service)}</dd>
           </div>
+          {summary.targetUrl ? (
+            <div className="border-b border-[#E3E8EF] py-3 last:border-0 last:pb-0">
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#5B6474]">Standee opens</dt>
+              <dd className="mt-1 break-all text-sm font-medium text-[#0F7B4B]">
+                <a href={summary.targetUrl} className="underline" target="_blank" rel="noreferrer">
+                  {summary.targetUrl}
+                </a>
+              </dd>
+            </div>
+          ) : null}
+          {summary.googleReviewUrl ? (
+            <div className="py-3">
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#5B6474]">Google review</dt>
+              <dd className="mt-1 break-all text-sm font-medium text-[#0F7B4B]">
+                <a href={summary.googleReviewUrl} className="underline" target="_blank" rel="noreferrer">
+                  Open review link
+                </a>
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 

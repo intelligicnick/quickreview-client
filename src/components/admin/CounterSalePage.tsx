@@ -423,10 +423,10 @@ function AgentsCard({
             <input
               id="pin"
               inputMode="numeric"
-              maxLength={5}
+              maxLength={COUNTER_SALE_PIN_LENGTH}
               value={pin}
               onChange={(e) => setPin(normalizeCounterSalePin(e.target.value))}
-              placeholder="•••••"
+              placeholder="••••••••"
               className={`${inputCls} px-3 font-mono tracking-[0.2em]`}
             />
             <button
@@ -563,11 +563,11 @@ function AgentsCard({
                       <input
                         id={`pin-edit-${a.id}`}
                         inputMode="numeric"
-                        maxLength={5}
+                        maxLength={COUNTER_SALE_PIN_LENGTH}
                         value={pinEditValue}
                         onChange={(e) => setPinEditValue(normalizeCounterSalePin(e.target.value))}
                         className={`${inputCls} max-w-[140px] font-mono tracking-[0.2em]`}
-                        placeholder="•••••"
+                        placeholder="••••••••"
                         autoFocus
                       />
                       <button

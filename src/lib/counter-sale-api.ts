@@ -31,13 +31,23 @@ export function setCounterSaleToken(token: string | null): void {
   }
 }
 
-export function takeCounterSaleTokenFromHash(): string | null {
-  const raw = window.location.hash;
-  if (!raw.startsWith('#t=')) return null;
-  const token = decodeURIComponent(raw.slice(3)).trim();
-  if (!token) return null;
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  return token;
+export function takeCounterSaleSessionTicketFromQuery(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const ticket = params.get('ticket')?.trim();
+  if (!ticket) return null;
+  params.delete('ticket');
+  const rest = params.toString();
+  const path = window.location.pathname + (rest ? `?${rest}` : '');
+  window.history.replaceState(null, '', path);
+  return ticket;
+}
+
+export async function redeemCounterSaleSessionTicket(ticket: string): Promise<string> {
+  const data = await counterSaleApi<{ accessToken: string }>('/api/counter-sale/auth/session', {
+    method: 'POST',
+    body: { ticket },
+  });
+  return data.accessToken;
 }
 
 type RequestOptions = {
