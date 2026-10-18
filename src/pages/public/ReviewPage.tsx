@@ -54,18 +54,19 @@ const DEFAULT_ANSWER_OPTIONS_BY_QUESTION = [
 ];
 
 const SUBSCRIPTION_UNAVAILABLE_TITLE = 'No Subscription!';
+const MAX_FRAME_GENERATIONS = 2;
 
-function fallbackDrafts(name: string, stars: number, highlight?: string): string[] {
-  const phrases = (highlight ?? '')
-    .split(/[,;]+/)
-    .map((part) => part.trim())
-    .filter((part) => part.length >= 2);
-  const a = phrases[0] ?? 'great service';
-  const b = phrases[1] ?? a;
-  return [
-    `${stars} stars at ${name} — ${a} really made the difference for me.`,
-    `I'd recommend ${name}; ${b.toLowerCase()} was handled better than I expected.`,
-  ];
+function frameSessionIdForCode(reviewCode: string): string {
+  const key = `qr-frame-session-${reviewCode}`;
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    sessionStorage.setItem(key, id);
+    return id;
+  } catch {
+    return `ephemeral-${reviewCode}`;
+  }
 }
 
 function buildDraftAnswers(questions: string[], answers: string[]): DraftAnswer[] {
@@ -95,6 +96,9 @@ export function ReviewPage() {
   const [privateFeedbackText, setPrivateFeedbackText] = useState('');
   const [privateFeedbackError, setPrivateFeedbackError] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [generationsRemaining, setGenerationsRemaining] = useState(MAX_FRAME_GENERATIONS);
+  const [priorDraftTexts, setPriorDraftTexts] = useState<string[]>([]);
+  const [copyLaunching, setCopyLaunching] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,21 +173,44 @@ export function ReviewPage() {
     setDraftVersions([]);
     setActiveWording(0);
     try {
-      const data = await api<{ suggestions: string[] }>(
+      const data = await api<{ suggestions: string[]; generationsRemaining: number }>(
         `/api/public/r/${encodeURIComponent(code)}/suggestions`,
-        { method: 'POST', auth: false, body: { stars: starRating, answers } },
+        {
+          method: 'POST',
+          auth: false,
+          body: {
+            stars: starRating,
+            answers,
+            frameSessionId: frameSessionIdForCode(code),
+            excludeDrafts: priorDraftTexts,
+          },
+        },
       );
-      const list = (data.suggestions.length ? data.suggestions : fallbackDrafts(shop.name, starRating, answers[0]?.answer)).slice(
-        0,
-        2,
+      const list = data.suggestions.slice(0, 2);
+      if (!list.length) {
+        setDraftError('Could not generate your review. Please try again.');
+        setStep('rate');
+        return;
+      }
+      setPriorDraftTexts((prev) => [...prev, ...list]);
+      setGenerationsRemaining(
+        typeof data.generationsRemaining === 'number'
+          ? data.generationsRemaining
+          : Math.max(0, generationsRemaining - 1),
       );
       setDraftVersions(list);
       setStep('draft');
     } catch (err) {
-      const fallback = fallbackDrafts(shop.name, starRating, answers[0]?.answer);
+      if (err instanceof ApiError && err.status === 429) {
+        setGenerationsRemaining(0);
+        setDraftError(err.message || 'You can frame your review up to 2 times.');
+        if (draftVersions.length) {
+          setStep('draft');
+          return;
+        }
+      }
       setDraftError(err instanceof Error ? err.message : 'Could not generate your review.');
-      setDraftVersions(fallback.slice(0, 2));
-      setStep('draft');
+      setStep('rate');
     }
   }
 
@@ -239,19 +266,23 @@ export function ReviewPage() {
   }
 
   async function handleCopyAndOpenGoogle() {
-    if (!shop || !draftText.trim()) return;
+    if (!shop || !draftText.trim() || copyLaunching) return;
     const text = draftText.trim();
+    setCopyLaunching(true);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // Still open Google when clipboard blocked.
+      /* Still open Google when clipboard blocked. */
     }
     if (selected) {
       void record('google_open', { stars: selected }).catch(() => undefined);
     }
-    if (shop.googleReviewUrl) {
-      window.open(shop.googleReviewUrl, '_blank', 'noopener,noreferrer');
-    }
+    window.setTimeout(() => {
+      if (shop.googleReviewUrl) {
+        window.open(shop.googleReviewUrl, '_blank', 'noopener,noreferrer');
+      }
+      window.setTimeout(() => setCopyLaunching(false), 1600);
+    }, 450);
   }
 
   function handleWriteOwn() {
@@ -264,6 +295,7 @@ export function ReviewPage() {
     setDraftVersions([]);
     setActiveWording(0);
     setDraftError(null);
+    setCopyLaunching(false);
   }
 
   function parsedAnswerOptions(value: string): string[] {
@@ -673,13 +705,20 @@ export function ReviewPage() {
                 })}
               </div>
               <div className="shrink-0 space-y-3 border-t border-line pt-4">
-                <button
-                  type="button"
-                  onClick={() => selected && void generateDraft(selected)}
-                  className="w-full rounded-xl border border-line bg-white py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand"
-                >
-                  New wordings
-                </button>
+                {generationsRemaining > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => selected && void generateDraft(selected)}
+                    className="w-full rounded-xl border border-line bg-white py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand"
+                  >
+                    New wordings
+                    <span className="ml-1 font-normal text-muted">({generationsRemaining} left)</span>
+                  </button>
+                ) : (
+                  <p className="text-center text-xs text-muted">
+                    You&apos;ve used both framing attempts — pick an option above to copy.
+                  </p>
+                )}
                 {shop.googleReviewUrl ? (
                   <button
                     type="button"
@@ -713,6 +752,22 @@ export function ReviewPage() {
           </div>
         ) : null}
       </main>
+
+      {copyLaunching ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-6 backdrop-blur-[2px]"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="animate-fade-up w-full max-w-xs rounded-2xl bg-white px-6 py-8 text-center shadow-xl">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand/15 text-brand">
+              <CheckCircle2 className="h-8 w-8 animate-[pulse_1s_ease-in-out_2]" aria-hidden />
+            </div>
+            <p className="mt-4 font-display text-lg font-bold text-ink">Copied!</p>
+            <p className="mt-2 text-sm text-muted">Opening Google so you can paste and post…</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
