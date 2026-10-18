@@ -2,15 +2,19 @@ import { ArrowRight, MessageSquareWarning, QrCode, Sparkles, Star } from 'lucide
 import type { LucideIcon } from 'lucide-react';
 
 const FLOW: { icon: LucideIcon; title: string; detail: string; tag?: string }[] = [
-  { icon: QrCode, title: 'Scan QR', detail: 'At counter or table — no app download' },
-  { icon: Star, title: 'Rate visit', detail: '1–5 stars in seconds on your branded page' },
+  { icon: QrCode, title: 'Point & open', detail: 'Camera on your standee — nothing to install' },
+  { icon: Star, title: 'Score the visit', detail: 'Five taps on a page that carries your logo' },
   {
     icon: Sparkles,
-    title: 'AI draft or private form',
-    detail: '4–5★ answer quick questions → AI draft to edit; 1–3★ stay internal',
-    tag: 'Smart routing',
+    title: 'Branch by score',
+    detail: 'Top scores get suggested wording; middling scores open a private note to you',
+    tag: 'Auto split',
   },
-  { icon: MessageSquareWarning, title: 'Post or fix', detail: 'Happy guests copy to Google; you resolve complaints first' },
+  {
+    icon: MessageSquareWarning,
+    title: 'Publish or recover',
+    detail: 'Fans land on Google with editable text; you call back before a bad story spreads',
+  },
 ];
 
 export function LandingGuestFlow() {

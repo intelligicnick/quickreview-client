@@ -38,18 +38,18 @@ import { LandingReputationStats } from '../components/landing/LandingReputationS
 import { LandingFooter } from '../components/landing/LandingFooter';
 
 const HERO_STATS = [
-  { value: '2 min', label: 'typical setup' },
-  { value: '1 QR', label: 'reviews, menu & card' },
-  { value: '10%', label: 'referral savings' },
+  { value: '<5 min', label: 'signup to printed QR' },
+  { value: 'One link', label: 'reputation · menu · contact' },
+  { value: '10%', label: 'referral credit' },
 ] as const;
 
 const TRUST_ITEMS = [
-  { icon: MapPin, label: 'Google import' },
-  { icon: QrCode, label: 'QR codes' },
-  { icon: Star, label: 'Reviews' },
-  { icon: UtensilsCrossed, label: 'Menus' },
-  { icon: Users, label: 'CRM' },
-  { icon: Palette, label: 'Posters' },
+  { icon: MapPin, label: 'GBP sync' },
+  { icon: QrCode, label: 'Counter codes' },
+  { icon: Star, label: 'Reputation' },
+  { icon: UtensilsCrossed, label: 'Live menu' },
+  { icon: Users, label: 'Follow-ups' },
+  { icon: Palette, label: 'Printables' },
 ] as const;
 
 export function LandingPage() {
@@ -63,31 +63,32 @@ export function LandingPage() {
             <div className="animate-fade-up text-white">
               <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Rank higher on Google
+                Built for walk-in trade
               </p>
               <h1 className="font-display mt-5 text-[1.75rem] font-extrabold leading-[1.12] tracking-tight sm:text-4xl lg:text-[2.85rem]">
-                Turn every happy customer into a 5-star Google review
+                Your counter is where reputation is won or lost
               </h1>
               <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/88 sm:text-base">
-                Place a QR at checkout. Happy guests get AI-drafted reviews; unhappy ones share
-                feedback privately — then menus, digital cards, and CRM live in the same workspace.
+                Drop one code by the till. Delighted visitors get wording help for public reviews;
+                frustrated ones talk to you first. Menus, tap-to-save contacts, and follow-ups share
+                the same dashboard — no duct-taped stack of apps.
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link
                   to="/register"
                   className="inline-flex min-h-11 items-center rounded-2xl bg-white px-6 text-sm font-semibold text-brand shadow-[0_12px_32px_rgba(0,0,0,0.18)] transition hover:bg-white/95"
                 >
-                  Get started free
+                  Create free workspace
                 </Link>
                 <a
                   href="#how-it-works"
                   className="inline-flex min-h-11 items-center rounded-2xl border border-white/35 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
-                  See the flow
+                  Watch guest journey
                 </a>
               </div>
               <p className="mt-4 text-xs font-medium text-white/70">
-                Free workspace · Import from Google Business · Refer a shop for 10% off
+                No card to start · Pull details from Google Business Profile · Refer a neighbor for 10% off
               </p>
               <dl className="mt-8 grid max-w-md grid-cols-3 gap-3 border-t border-white/20 pt-6 sm:max-w-lg sm:gap-4">
                 {HERO_STATS.map(({ value, label }) => (
@@ -113,17 +114,17 @@ export function LandingPage() {
         <section id="how-it-works" className="scroll-mt-20 border-b border-line bg-paper py-12 sm:py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <LandingSectionHeader
-              eyebrow="Pure simplicity"
-              title="How QuickReview works for your guests"
-              subtitle="One QR on the counter. We route 4–5★ guests toward Google with AI drafts and keep 1–3★ feedback internal."
+              eyebrow="Guest path"
+              title="What happens after someone scans"
+              subtitle="A single code opens your branded page. High scores get gentle help posting online; low scores stay between you and the guest."
             />
             <LandingGuestFlow />
             <p className="mt-8 text-center text-sm text-muted">
-              For you:{' '}
+              On your side:{' '}
               <span className="font-semibold text-ink">
-                import from Google → print QR → follow up in CRM
+                sync location → print standees → nudge leads in CRM
               </span>{' '}
-              — all from one login.
+              without switching tools.
             </p>
           </div>
         </section>
@@ -133,33 +134,33 @@ export function LandingPage() {
         <section id="features" className="scroll-mt-20 bg-paper py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <LandingSectionHeader
-              eyebrow="Features"
-              title="Everything in one workspace"
-              subtitle="Guest-facing pages and merchant tools that stay in sync — no juggling five different apps."
+              eyebrow="Toolkit"
+              title="Four jobs, one login"
+              subtitle="Public-facing pages and back-office tools update together — you are not maintaining parallel spreadsheets and link trees."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               <LandingHighlightCard
                 icon={Star}
-                title="QuickReview on every scan"
-                description="Collect star ratings, capture private feedback, and send happy customers to Google — all from a branded guest page."
+                title="Reputation capture"
+                description="Star taps, optional private notes, and a smooth handoff to Google when the visit went well — on a page that looks like your brand."
                 visual={<ReviewStarsVisual />}
               />
               <LandingHighlightCard
                 icon={UtensilsCrossed}
-                title="Quick Commerce menus"
-                description="Publish a mobile menu and catalogue guests can browse from your QR — prices, veg badges, and photos included."
+                title="Commerce menu"
+                description="Show today’s items, prices, and dietary tags from the same scan guests already use — ideal for counters and tables."
                 visual={<MenuStackVisual />}
               />
               <LandingHighlightCard
                 icon={IdCard}
-                title="QuickConnect digital cards"
-                description="Share a tap-to-save contact card from the same QR — name, phone, and role without paper business cards."
+                title="Connect card"
+                description="Let people save your number and role in one tap — digital vCard from the QR they already have in hand."
                 visual={<ConnectCardVisual />}
               />
               <LandingHighlightCard
                 icon={Users}
-                title="CRM follow-ups"
-                description="Log customers, quotations, and reminders on mobile — so nothing falls through after the first visit."
+                title="Relationship log"
+                description="Quotes, callbacks, and small reminders on phone or laptop so a good first visit turns into repeat business."
                 visual={<CrmFollowUpsVisual />}
               />
             </div>
@@ -176,18 +177,18 @@ export function LandingPage() {
                 </div>
               }
             >
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">QR flow</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Smart routing</p>
               <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Scan once, route every guest
+                One code, the right next step
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-                One code on the counter or table opens the right experience — reviews, menus, or your
-                digital card.
+                Table tent or receipt sticker — the scan lands on your hub. Guests choose reviews, browse
+                the menu, or save your contact without hunting for links.
               </p>
               <ul className="mt-6 space-y-3 text-sm">
-                <Bullet>Guests tap stars on a branded QuickReview page</Bullet>
-                <Bullet>Low ratings stay private so you can fix issues first</Bullet>
-                <Bullet>4–5★ ratings can hand off to Google in one tap</Bullet>
+                <Bullet>Branded rating screen in seconds, no app install</Bullet>
+                <Bullet>Scores below four stars trigger a private message to you</Bullet>
+                <Bullet>Strong scores open Google with suggested copy they can edit</Bullet>
               </ul>
             </LandingSplitSection>
           </div>
@@ -199,9 +200,9 @@ export function LandingPage() {
               <div>
                 <LandingSectionHeader
                   align="left"
-                  eyebrow="Why us"
-                  title="Advantages"
-                  subtitle="Everything you need to look professional online and stay on top of customers — without a complicated stack."
+                  eyebrow="Operator edge"
+                  title="Why teams stick with QuickReview"
+                  subtitle="Look polished in search, respond faster on the floor, and keep relationships organized — without hiring an agency."
                 />
                 <div className="mt-8 hidden lg:block">
                   <AnalyticsDonutVisual />
@@ -210,23 +211,23 @@ export function LandingPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <AdvantageItem
                   icon={MapPin}
-                  title="Smooth start"
-                  description="Import your shop from Google Business Profile and pick a location to go live."
+                  title="Fast onboarding"
+                  description="Pull hours, name, and location from Google Business Profile, then pick which products to switch on."
                 />
                 <AdvantageItem
                   icon={Clock}
-                  title="Always-on guest pages"
-                  description="Review, menu, and digital card links work 24/7 from the same QR codes."
+                  title="Always live"
+                  description="Guest links for ratings, menu, and vCard stay up around the clock from the codes you already printed."
                 />
                 <AdvantageItem
                   icon={QrCode}
-                  title="Low-friction QR"
-                  description="Generate and print codes for tables, counters, and standees from your dashboard."
+                  title="Print-ready codes"
+                  description="Export QR artwork for counters, menus, and packaging straight from the admin panel."
                 />
                 <AdvantageItem
                   icon={MessageSquare}
-                  title="CRM follow-ups"
-                  description="Track customers, quotations, and reminders in QuickReview on mobile or desktop."
+                  title="Human follow-through"
+                  description="Notes, quotes, and ping reminders live beside your reputation tools on any device."
                 />
               </div>
             </div>
@@ -236,8 +237,8 @@ export function LandingPage() {
         <section className="border-y border-line bg-white py-12 sm:py-14">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <LandingSectionHeader
-              title="Built for local business"
-              subtitle="Shops, cafés, salons, and service counters — the same simple toolkit."
+              title="Made for neighborhood operators"
+              subtitle="Retail counters, food service, grooming studios, clinics — one playbook, tuned to foot traffic."
             />
             <ul className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10">
               {TRUST_ITEMS.map(({ icon: Icon, label }) => (
@@ -258,18 +259,18 @@ export function LandingPage() {
               reverse
               visual={<StatsLineChartVisual />}
             >
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Analytics</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Pulse</p>
               <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-                See activity in real time
+                Know what the QR actually does
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-                Page views, star taps, private feedback, and Google opens — so you know what guests
-                actually do after they scan.
+                Opens, star taps, quiet complaints, and public review clicks — aggregated so you can
+                spot a slow week before revenue dips.
               </p>
               <ul className="mt-6 space-y-3 text-sm">
-                <Bullet>Per-location dashboard at a glance</Bullet>
-                <Bullet>Product status for Review, Commerce, and Connect</Bullet>
-                <Bullet>Activate QuickDesign posters and QuickScan when you are ready</Bullet>
+                <Bullet>Location-level snapshot on mobile or desktop</Bullet>
+                <Bullet>Live vs setup badges for each product module</Bullet>
+                <Bullet>Layer on QuickDesign posters and QuickScan when you scale</Bullet>
               </ul>
             </LandingSplitSection>
           </div>
@@ -281,30 +282,30 @@ export function LandingPage() {
               visual={<ProductFloatVisual />}
               className="lg:items-center"
             >
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Products</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Platform</p>
               <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Five tools, one login
+                Grow the stack only when you need to
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-white/75 sm:text-base">
-                Turn on what you need today — reviews, menus, digital cards, CRM, posters, and card
-                scanning — without replatforming later.
+                Begin with reputation, add menu and vCard, then CRM, printable campaigns, and card
+                scanning — same account, same data model.
               </p>
               <Link
                 to="/register"
                 className="mt-8 inline-flex min-h-11 items-center rounded-2xl bg-white px-6 text-sm font-semibold text-ink transition hover:bg-white/90"
               >
-                Start free
+                Open free workspace
               </Link>
             </LandingSplitSection>
 
             <div className="mt-16 grid items-center gap-10 border-t border-white/10 pt-16 lg:grid-cols-2">
               <div>
                 <h3 className="font-display text-xl font-bold sm:text-2xl">
-                  Your dashboard in your pocket
+                  Run the floor from your phone
                 </h3>
                 <p className="mt-2 text-sm text-white/70">
-                  Operate each location from one place — alerts, quick actions, and live product
-                  status.
+                  Multi-location owners get alerts, shortcuts, and module toggles without opening a
+                  laptop between rushes.
                 </p>
               </div>
               <LandingPhoneDashboard />
@@ -318,18 +319,18 @@ export function LandingPage() {
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <div className="landing-final-cta rounded-[2rem] border border-line px-6 py-12 text-center shadow-[0_16px_48px_rgba(27,35,51,0.06)] sm:px-10 sm:py-14">
               <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Start growing your Google reviews today
+                Put your reputation desk on the counter this week
               </h2>
               <p className="mt-3 text-sm text-muted sm:text-base">
-                Create your profile, download QR materials, and go live in minutes — reviews, menu,
-                and digital card included.
+                Claim your workspace, sync from Google, print QR art, and invite staff — reputation,
+                menu, and contact card included on day one.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to="/register"
                   className="inline-flex min-h-12 items-center rounded-2xl bg-ink px-8 text-sm font-semibold text-white transition hover:opacity-90"
                 >
-                  Get started
+                  Create workspace
                 </Link>
                 <Link
                   to="/login"

@@ -1,24 +1,24 @@
 const SAMPLES = [
   {
-    business: 'Restaurant',
+    business: 'Bakery',
     lang: 'English',
     text:
-      'Warm service and a spotless dining area. The team remembered our order — dinner felt effortless. Highly recommend for a quick, quality meal.',
-    keywords: ['warm service', 'quality meal'],
+      'Croissants were still warm at 8am and the barista spelled my name right on the cup. Small shop, big care — already planning Saturday brunch here.',
+    keywords: ['fresh pastry', 'friendly barista'],
   },
   {
-    business: 'Salon',
+    business: 'Clinic',
     lang: 'Hindi',
     text:
-      'Salon ka experience bahut accha tha. Staff ne styling carefully ki, jagah bilkul clean thi — next visit ke liye definitely recommend.',
-    keywords: ['great styling', 'clean salon'],
+      'Appointment time par mila, doctor ne calmly samjhaya. Waiting area saaf tha aur staff respectful — family ke liye safe feel hua.',
+    keywords: ['on-time care', 'clean clinic'],
   },
   {
-    business: 'Hotel',
+    business: 'Gym',
     lang: 'Telugu',
     text:
-      'Hotel stay chala comfortable ga undi. Room clean ga undi, staff friendly — check-in smooth ga jarigindi.',
-    keywords: ['clean rooms', 'smooth check-in'],
+      'Equipment maintenance chala bagundi, trainers approachable. Locker rooms tidy — morning workouts ki perfect vibe.',
+    keywords: ['well maintained', 'helpful trainers'],
   },
 ] as const;
 
@@ -28,27 +28,27 @@ export function LandingAiReviewShowcase() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">AI review drafts</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Writing assist</p>
             <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Never send customers to a blank Google box
+              Guests rarely know what to type — we start the sentence
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-              Pick languages and keywords — like &ldquo;friendly staff&rdquo; or &ldquo;clean
-              environment&rdquo; — and QuickReview suggests natural drafts happy guests can copy and
-              post in one tap.
+              Choose languages and phrases that matter to you (&ldquo;quick seating&rdquo;,
+              &ldquo;spotless washroom&rdquo;). The system proposes human-sounding lines they can tweak
+              before posting publicly.
             </p>
             <ul className="mt-6 space-y-2 text-sm text-muted">
               <li className="flex gap-2">
                 <span className="text-brand" aria-hidden>✓</span>
-                Multiple drafts per scan, tuned to your business type
+                Several variants per visit, shaped by your category
               </li>
               <li className="flex gap-2">
                 <span className="text-brand" aria-hidden>✓</span>
-                Low ratings never hit Google — they land in private feedback
+                Critical scores skip Google and land in your inbox
               </li>
               <li className="flex gap-2">
                 <span className="text-brand" aria-hidden>✓</span>
-                Print-ready QR standees from your dashboard
+                Export standee artwork when you are ready to print
               </li>
             </ul>
           </div>

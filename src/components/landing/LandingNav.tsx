@@ -4,12 +4,12 @@ import { Menu, X } from 'lucide-react';
 import { BrandMark } from '../BrandMark';
 
 const LINKS = [
-  { href: '#why-reviews', label: 'Why reviews' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#features', label: 'Features' },
-  { href: '#refer', label: 'Refer 10%' },
-  { href: '#products', label: 'Products' },
-  { href: '/guides', label: 'Guides', route: true },
+  { href: '#why-trust', label: 'Local trust' },
+  { href: '#how-it-works', label: 'Guest journey' },
+  { href: '#features', label: 'Toolkit' },
+  { href: '#refer', label: 'Partner perk' },
+  { href: '#products', label: 'Platform' },
+  { href: '/guides', label: 'Playbooks', route: true },
 ] as const;
 
 export function LandingNav() {
@@ -55,7 +55,7 @@ export function LandingNav() {
             to="/register"
             className="inline-flex min-h-10 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-white transition hover:opacity-90"
           >
-            Get started
+            Open workspace
           </Link>
         </div>
 
@@ -106,7 +106,7 @@ export function LandingNav() {
               className="inline-flex min-h-10 items-center justify-center rounded-xl bg-ink text-sm font-semibold text-white"
               onClick={() => setOpen(false)}
             >
-              Get started
+              Open workspace
             </Link>
           </nav>
         </div>

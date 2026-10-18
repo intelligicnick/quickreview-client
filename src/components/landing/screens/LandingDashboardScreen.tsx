@@ -1,9 +1,9 @@
 import { IdCard, Star, UtensilsCrossed } from 'lucide-react';
 
 const STATS = [
-  { label: 'Page views', value: '248' },
-  { label: 'Star taps', value: '86' },
-  { label: 'Google opens', value: '42' },
+  { label: 'Scans', value: '312' },
+  { label: 'Ratings', value: '94' },
+  { label: 'Public posts', value: '51' },
 ];
 
 export function LandingDashboardScreen() {
@@ -11,7 +11,7 @@ export function LandingDashboardScreen() {
     <div className="flex min-h-0 flex-1 flex-col bg-paper pt-3">
       <div className="px-3">
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Dashboard</p>
-        <p className="font-display text-sm font-bold text-ink">Sunrise Café</p>
+        <p className="font-display text-sm font-bold text-ink">Harbor & Hearth</p>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-1.5 px-3">

@@ -11,8 +11,8 @@ export function LandingConnectScreen() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand">
           <User className="h-7 w-7" />
         </div>
-        <p className="mt-3 text-center font-display text-sm font-bold">Rajesh Kumar</p>
-        <p className="text-center text-[10px] text-muted">Sunrise Café · Owner</p>
+        <p className="mt-3 text-center font-display text-sm font-bold">Meera Iyer</p>
+        <p className="text-center text-[10px] text-muted">Harbor & Hearth · GM</p>
         <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-muted">
           <Phone className="h-3 w-3" />
           +91 98765 43210

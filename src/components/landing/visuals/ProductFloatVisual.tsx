@@ -1,11 +1,11 @@
 import { IdCard, Palette, Star, UtensilsCrossed, Users } from 'lucide-react';
 
 const TILES = [
-  { title: 'QuickReview', sub: '4.8★ avg', icon: Star, className: 'landing-float-tile top-[8%] left-[6%] -rotate-3' },
-  { title: 'Quick Commerce', sub: '42 items', icon: UtensilsCrossed, className: 'landing-float-tile top-[4%] right-[4%] rotate-2' },
-  { title: 'QuickConnect', sub: '12 leads', icon: IdCard, className: 'landing-float-tile bottom-[28%] left-[2%] rotate-1' },
-  { title: 'CRM', sub: '8 follow-ups', icon: Users, className: 'landing-float-tile bottom-[12%] right-[6%] -rotate-2' },
-  { title: 'QuickDesign', sub: 'Posters', icon: Palette, className: 'landing-float-tile bottom-[4%] left-[28%] rotate-0' },
+  { title: 'Reputation', sub: '4.7★ pulse', icon: Star, className: 'landing-float-tile top-[8%] left-[6%] -rotate-3' },
+  { title: 'Commerce', sub: '36 dishes', icon: UtensilsCrossed, className: 'landing-float-tile top-[4%] right-[4%] rotate-2' },
+  { title: 'Connect', sub: '19 saves', icon: IdCard, className: 'landing-float-tile bottom-[28%] left-[2%] rotate-1' },
+  { title: 'CRM', sub: '6 nudges', icon: Users, className: 'landing-float-tile bottom-[12%] right-[6%] -rotate-2' },
+  { title: 'QuickDesign', sub: 'A3 posters', icon: Palette, className: 'landing-float-tile bottom-[4%] left-[28%] rotate-0' },
 ];
 
 export function ProductFloatVisual() {

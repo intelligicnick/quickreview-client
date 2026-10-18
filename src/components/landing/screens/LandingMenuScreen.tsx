@@ -1,9 +1,9 @@
 import { BrandMark } from '../../BrandMark';
 
 const ITEMS = [
-  { name: 'Masala Dosa', price: '₹120', veg: true },
-  { name: 'Filter Coffee', price: '₹45', veg: true },
-  { name: 'Chicken Biryani', price: '₹220', veg: false },
+  { name: 'Sourdough Tartine', price: '₹185', veg: true },
+  { name: 'Cold Brew', price: '₹95', veg: true },
+  { name: 'Herb Lamb Bowl', price: '₹340', veg: false },
 ];
 
 export function LandingMenuScreen() {
@@ -11,8 +11,8 @@ export function LandingMenuScreen() {
     <div className="flex min-h-0 flex-1 flex-col pt-2">
       <div className="px-3 pb-2">
         <BrandMark className="!h-6 max-w-[6.5rem]" />
-        <h2 className="mt-2 font-display text-sm font-bold text-ink">Sunrise Café</h2>
-        <p className="text-[10px] text-muted">Guest menu · scan to order</p>
+        <h2 className="mt-2 font-display text-sm font-bold text-ink">Harbor & Hearth</h2>
+        <p className="text-[10px] text-muted">Today&apos;s board · scan to browse</p>
       </div>
 
       <div className="flex-1 space-y-2 overflow-hidden px-3 pb-3">

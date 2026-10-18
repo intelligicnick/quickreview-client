@@ -4,8 +4,8 @@ export function LandingReviewScreen() {
   return (
     <ReviewGuestRatingPreview
       compact
-      locationName="Sunrise Café"
-      subtitle="How was your visit today?"
+      locationName="Harbor & Hearth"
+      subtitle="How did we do on this visit?"
     />
   );
 }

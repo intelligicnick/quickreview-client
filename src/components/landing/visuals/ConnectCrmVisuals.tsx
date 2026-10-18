@@ -10,8 +10,8 @@ export function ConnectCardVisual() {
             <IdCard className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <p className="truncate font-display text-sm font-bold">Rajesh Kumar</p>
-            <p className="text-[10px] text-muted">Sunrise Café</p>
+            <p className="truncate font-display text-sm font-bold">Meera Iyer</p>
+            <p className="text-[10px] text-muted">Harbor & Hearth</p>
           </div>
         </div>
         <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted">
@@ -27,9 +27,9 @@ export function ConnectCardVisual() {
 }
 
 const FOLLOW_UPS = [
-  { name: 'Priya S.', note: 'Quotation sent', due: 'Today' },
-  { name: 'Amit K.', note: 'Menu photos', due: 'Tomorrow' },
-  { name: 'Neha R.', note: 'Google review', due: 'Fri' },
+  { name: 'Dev P.', note: 'Catering quote', due: 'Today' },
+  { name: 'Sana L.', note: 'Seasonal menu', due: 'Wed' },
+  { name: 'Rohit V.', note: 'Thank-you call', due: 'Fri' },
 ] as const;
 
 export function CrmFollowUpsVisual() {

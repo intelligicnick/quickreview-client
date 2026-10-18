@@ -12,21 +12,20 @@ export function LandingReferralBand() {
           <Gift className="h-7 w-7" />
         </span>
         <div className="flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Refer &amp; earn</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Neighbor perk</p>
           <h2 className="font-display mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
-            Refer a local business — you both get 10% off
+            Introduce another owner — both of you save 10%
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
-            Know a café, salon, or shop that needs more Google reviews? Share QuickReview. When they
-            subscribe, you each receive 10% off your next billing cycle — stackable with free
-            workspace onboarding.
+            Send a fellow merchant your link. When they upgrade to a paid plan, each account gets 10%
+            off the next invoice — on top of the free tier you already use to test the counter flow.
           </p>
         </div>
         <Link
           to="/register"
           className="inline-flex min-h-11 shrink-0 items-center rounded-2xl bg-white px-6 text-sm font-semibold text-ink transition hover:bg-white/90"
         >
-          Start free, then refer
+          Join, then share link
         </Link>
       </div>
     </section>

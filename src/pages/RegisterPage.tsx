@@ -69,6 +69,17 @@ export function RegisterPage() {
         />
       </Field>
       <p className="text-xs text-muted">At least 8 characters, including a letter and a number.</p>
+      <p className="text-xs text-muted">
+        By creating an account you agree to our{' '}
+        <Link className="font-semibold text-brand" to="/terms">
+          Terms
+        </Link>{' '}
+        and{' '}
+        <Link className="font-semibold text-brand" to="/privacy-policy">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </AuthCard>
   );
 }

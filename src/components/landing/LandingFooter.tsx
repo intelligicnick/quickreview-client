@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { BrandMark } from '../BrandMark';
 import { GUIDE_POSTS } from '../../lib/guides';
+import { LEGAL_DOCS } from '../../lib/legal-docs';
 
 const PRODUCT_LINKS = [
-  { href: '/#how-it-works', label: 'How it works' },
-  { href: '/#features', label: 'Features' },
-  { href: '/#advantages', label: 'Advantages' },
-  { href: '/#products', label: 'Products' },
-  { href: '/#refer', label: 'Refer & save 10%' },
+  { href: '/#how-it-works', label: 'Guest journey' },
+  { href: '/#features', label: 'Toolkit' },
+  { href: '/#advantages', label: 'Why QuickReview' },
+  { href: '/#products', label: 'Platform' },
+  { href: '/#refer', label: 'Partner perk (10%)' },
 ] as const;
 
 export function LandingFooter() {
@@ -26,14 +27,14 @@ export function LandingFooter() {
               <BrandMark className="h-9 sm:h-10" />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted">
-              Google reviews, mobile menus, digital cards, and light CRM — built for shops that run on
-              foot traffic.
+              Counter-side reputation, shoppable menus, tap-to-save contacts, and lightweight CRM —
+              built for brick-and-mortar teams.
             </p>
             <Link
               to="/register"
               className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-ink px-5 text-sm font-semibold text-white transition hover:opacity-90"
             >
-              Get started free
+              Open free workspace
             </Link>
           </div>
 
@@ -51,8 +52,8 @@ export function LandingFooter() {
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand">Guides & blog</p>
-            <p className="mt-2 text-sm text-muted">Practical playbooks for reviews, QR, and growth.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand">Playbooks</p>
+            <p className="mt-2 text-sm text-muted">Field notes on reputation, codes, and repeat visits.</p>
             <ul className="mt-4 space-y-3 text-sm">
               {featuredGuides.map((post) => (
                 <li key={post.slug}>
@@ -93,6 +94,27 @@ export function LandingFooter() {
               <li>
                 <Link to="/guides" className="font-medium text-ink/80 transition hover:text-brand">
                   Guides hub
+                </Link>
+              </li>
+            </ul>
+            <p className="mt-8 text-xs font-bold uppercase tracking-[0.18em] text-brand">Legal</p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              <li>
+                <Link to={LEGAL_DOCS.terms.path} className="font-medium text-ink/80 transition hover:text-brand">
+                  Terms &amp; conditions
+                </Link>
+              </li>
+              <li>
+                <Link to={LEGAL_DOCS.privacy.path} className="font-medium text-ink/80 transition hover:text-brand">
+                  Privacy policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to={LEGAL_DOCS.cancellation.path}
+                  className="font-medium text-ink/80 transition hover:text-brand"
+                >
+                  Cancellation &amp; refunds
                 </Link>
               </li>
             </ul>

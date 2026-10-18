@@ -1,30 +1,30 @@
 const STATS = [
   {
-    value: '97%',
-    label: 'of people read reviews before choosing a local business',
+    value: '9 in 10',
+    label: 'shoppers check online sentiment before they pick a local spot',
   },
   {
-    value: '35%',
-    label: 'more revenue when owners reply to at least a quarter of reviews',
+    value: '1 in 4',
+    label: 'review replies answered — yet that habit alone can lift revenue ~35%',
   },
   {
     value: '+9%',
-    label: 'revenue lift for every extra star on your Google average',
+    label: 'typical sales bump for each full star on your public average',
   },
 ] as const;
 
 export function LandingReputationStats() {
   return (
-    <section id="why-reviews" className="scroll-mt-20 border-b border-line bg-white py-14 sm:py-16">
+    <section id="why-trust" className="scroll-mt-20 border-b border-line bg-white py-14 sm:py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">The reputation gap</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">Local trust math</p>
           <h2 className="font-display mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-            Why your Google rating can&apos;t wait
+            Search results decide who walks through your door
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-            Prospects decide before they walk in. Silence and unresolved complaints both cost you —
-            QuickReview turns happy visits into public reviews and unhappy ones into private fixes.
+            Empty review feeds and ignored complaints look the same to strangers: risky. QuickReview
+            amplifies praise in public and keeps hard conversations private until you fix them.
           </p>
         </div>
         <ul className="mt-10 grid gap-5 sm:grid-cols-3">

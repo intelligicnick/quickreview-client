@@ -6,9 +6,9 @@ export function StatsLineChartVisual() {
     >
       <div className="flex items-end justify-between gap-2">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">This week</p>
-          <p className="font-display text-2xl font-extrabold text-white">+32%</p>
-          <p className="text-xs text-white/60">Guest engagement</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">Last 7 days</p>
+          <p className="font-display text-2xl font-extrabold text-white">+28%</p>
+          <p className="text-xs text-white/60">Scan-to-review rate</p>
         </div>
         <div className="flex gap-3 text-[10px] text-white/70">
           <span className="flex items-center gap-1">
