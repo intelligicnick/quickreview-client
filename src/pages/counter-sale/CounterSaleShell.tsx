@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { installCounterSalePwaRefresh } from '../../counter-sale-pwa-refresh';
 import { BrandIcon } from '../../components/BrandIcon';
 import { IconSignOut } from '../../components/counter-sale/icons';
 import { getCounterSaleToken, setCounterSaleToken } from '../../lib/counter-sale-api';
@@ -6,6 +8,10 @@ import { getCounterSaleToken, setCounterSaleToken } from '../../lib/counter-sale
 export function CounterSaleShell() {
   const navigate = useNavigate();
   const signedIn = Boolean(getCounterSaleToken());
+
+  useEffect(() => {
+    installCounterSalePwaRefresh();
+  }, []);
 
   function logout() {
     setCounterSaleToken(null);

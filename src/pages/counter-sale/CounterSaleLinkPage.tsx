@@ -4,7 +4,14 @@ import { Search } from 'lucide-react';
 import { LinkSuccess, type LinkSuccessSummary } from '../../components/counter-sale/LinkSuccess';
 import { ProgressSteps, deriveStepStates } from '../../components/counter-sale/ProgressSteps';
 import { SelectableCard } from '../../components/counter-sale/SelectableCard';
-import { StandeeQrScanner } from '../../components/counter-sale/StandeeQrScanner';
+import { StandeeQrScanner, type StandeeScanOutcome } from '../../components/counter-sale/StandeeQrScanner';
+import { playCounterSaleScanSound } from '../../lib/counter-sale-scan-sound';
+import {
+  STANDEE_CODE_LEN,
+  normalizeStandeeCode,
+  qrLookupMessage,
+  type QrLookupStatus,
+} from '../../lib/counter-sale-qr';
 import { StepCard } from '../../components/counter-sale/StepCard';
 import { StickyActionBar } from '../../components/counter-sale/StickyActionBar';
 import {
@@ -24,22 +31,10 @@ type PlaceRow = {
 
 type QrLookup = {
   code: string;
-  status: 'ready' | 'assigned' | 'not_found' | 'not_printed';
+  status: QrLookupStatus;
 };
 
 type ServiceKind = 'review' | 'menu';
-
-const STANDEE_CODE_LEN = 8;
-
-function parseQrInput(raw: string): string {
-  const trimmed = raw.trim();
-  const fromUrl = trimmed.match(/\/q\/([A-Za-z0-9]+)/i)?.[1];
-  return (fromUrl ?? trimmed).toUpperCase().replace(/[^A-Z0-9]/g, '');
-}
-
-function normalizeStandeeCode(raw: string): string {
-  return parseQrInput(raw).slice(0, STANDEE_CODE_LEN);
-}
 
 export function CounterSaleLinkPage() {
   const [token, setToken] = useState<string | null>(() => getCounterSaleToken());
@@ -77,7 +72,9 @@ export function CounterSaleLinkPage() {
   const [success, setSuccess] = useState<LinkSuccessSummary | null>(null);
 
   const lookupBusy = useRef(false);
-  const lookupQrRef = useRef<(code: string) => Promise<void>>(async () => {});
+  const lookupQrRef = useRef<(code: string, playSound?: boolean) => Promise<StandeeScanOutcome | void>>(
+    async () => {},
+  );
 
   const qrDone = qrStatus === 'ready';
   const placeDone = Boolean(selectedPlaceId);
@@ -92,11 +89,11 @@ export function CounterSaleLinkPage() {
     [places, selectedPlaceId],
   );
 
-  const lookupQr = useCallback(async (raw: string) => {
+  const lookupQr = useCallback(async (raw: string, playSound = false): Promise<StandeeScanOutcome | void> => {
     const code = normalizeStandeeCode(raw);
-    if (code.length < 4) {
+    if (code.length < STANDEE_CODE_LEN) {
       setQrStatus(null);
-      setQrMessage(null);
+      setQrMessage(code.length > 0 ? `${STANDEE_CODE_LEN - code.length} more characters` : null);
       return;
     }
     if (lookupBusy.current) return;
@@ -108,13 +105,24 @@ export function CounterSaleLinkPage() {
       );
       setQrCode(data.code);
       setQrStatus(data.status);
-      if (data.status === 'ready') setQrMessage('Code is ready to link.');
-      else if (data.status === 'assigned') setQrMessage('This code is already linked.');
-      else if (data.status === 'not_printed') setQrMessage('Code is not marked printed yet.');
-      else setQrMessage('Code not found.');
+      setQrMessage(qrLookupMessage(data.status));
+      if (playSound) {
+        const sound =
+          data.status === 'ready'
+            ? 'ready'
+            : data.status === 'assigned'
+              ? 'assigned'
+              : 'not_found';
+        playCounterSaleScanSound(sound);
+      }
+      if (data.status === 'ready') return 'stop';
+      if (data.status === 'assigned' || data.status === 'not_found') return 'stop';
+      return;
     } catch (err) {
-      setQrStatus(null);
+      setQrStatus('not_found');
       setQrMessage(err instanceof CounterSaleApiError ? err.message : 'Lookup failed');
+      if (playSound) playCounterSaleScanSound('not_found');
+      return 'stop';
     } finally {
       lookupBusy.current = false;
     }
@@ -123,7 +131,14 @@ export function CounterSaleLinkPage() {
   lookupQrRef.current = lookupQr;
 
   useEffect(() => {
-    if (qrCode.length === STANDEE_CODE_LEN) void lookupQr(qrCode);
+    if (qrCode.length !== STANDEE_CODE_LEN) {
+      if (qrCode.length === 0) {
+        setQrStatus(null);
+        setQrMessage(null);
+      }
+      return;
+    }
+    void lookupQr(qrCode);
   }, [qrCode, lookupQr]);
 
   useEffect(() => {
@@ -151,7 +166,12 @@ export function CounterSaleLinkPage() {
   const handleScannedRaw = useCallback(async (raw: string) => {
     const code = normalizeStandeeCode(raw);
     setQrCode(code);
-    await lookupQrRef.current(code);
+    if (code.length < STANDEE_CODE_LEN) {
+      setQrStatus(null);
+      setQrMessage('QR too short — enter the full standee code manually.');
+      return 'stop';
+    }
+    return lookupQrRef.current(code, true);
   }, []);
 
   async function linkStandee() {
@@ -234,7 +254,20 @@ export function CounterSaleLinkPage() {
               />
             </label>
             {qrMessage ? (
-              <p className={`mt-2 text-sm ${qrDone ? 'text-[#0F7B4B]' : 'text-[#5B6474]'}`}>{qrMessage}</p>
+              <p
+                className={`mt-2 text-sm ${
+                  qrStatus === 'ready'
+                    ? 'text-[#0F7B4B]'
+                    : qrStatus === 'assigned'
+                      ? 'text-[#B45309]'
+                      : qrStatus === 'not_found'
+                        ? 'text-red-700'
+                        : 'text-[#5B6474]'
+                }`}
+                role="status"
+              >
+                {qrMessage}
+              </p>
             ) : null}
           </StepCard>
 

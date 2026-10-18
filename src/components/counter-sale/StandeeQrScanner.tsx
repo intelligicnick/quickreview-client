@@ -3,8 +3,10 @@ import { attachStreamToVideo, cameraErrorMessage, hasCameraApi, requestQrCameraS
 import { readQrFromImageFile, readQrFromVideo } from '../../lib/qr-from-video';
 import { IconScan } from './icons';
 
+export type StandeeScanOutcome = 'continue' | 'stop';
+
 type StandeeQrScannerProps = {
-  onScan: (raw: string) => void | Promise<void>;
+  onScan: (raw: string) => void | Promise<StandeeScanOutcome | void>;
   onError?: (message: string) => void;
 };
 
@@ -18,6 +20,7 @@ export function StandeeQrScanner({ onScan, onError }: StandeeQrScannerProps) {
   const openGen = useRef(0);
   const onScanRef = useRef(onScan);
   const fileRef = useRef<HTMLInputElement>(null);
+  const lastScanRef = useRef<{ raw: string; at: number } | null>(null);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -112,7 +115,12 @@ export function StandeeQrScanner({ onScan, onError }: StandeeQrScannerProps) {
         try {
           const raw = await readQrFromVideo(video, canvas);
           if (!raw) return;
-          await onScanRef.current(raw);
+          const now = Date.now();
+          const last = lastScanRef.current;
+          if (last && last.raw === raw && now - last.at < 2500) return;
+          lastScanRef.current = { raw, at: now };
+          const outcome = await onScanRef.current(raw);
+          if (outcome === 'stop') stopStream();
         } catch {
           /* keep scanning */
         }
@@ -138,7 +146,8 @@ export function StandeeQrScanner({ onScan, onError }: StandeeQrScannerProps) {
         onError?.(msg);
         return;
       }
-      await onScanRef.current(raw);
+      const outcome = await onScanRef.current(raw);
+      if (outcome === 'stop') stopStream();
     } catch {
       const msg = 'Could not read that photo. Try again.';
       setLocalError(msg);

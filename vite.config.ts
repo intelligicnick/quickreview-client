@@ -8,7 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      injectRegister: 'auto',
+      registerType: 'autoUpdate',
+      injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
         name: 'QuickReview Counter Sale',
@@ -27,6 +28,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        skipWaiting: true,
+        clientsClaim: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
       },
     }),
   ],

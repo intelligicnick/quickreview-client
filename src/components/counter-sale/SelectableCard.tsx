@@ -40,8 +40,8 @@ export function SelectableCard({
       <span className="min-w-0 flex-1">
         <span
           id={nameId}
-          className={`block truncate text-[15px] leading-snug text-[#0F172A] ${
-            layout === 'grid' ? 'font-bold' : 'font-semibold'
+          className={`block text-[15px] leading-snug text-[#0F172A] ${
+            layout === 'grid' ? 'font-bold break-words' : 'truncate font-semibold'
           }`}
         >
           {name}
