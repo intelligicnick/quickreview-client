@@ -50,12 +50,16 @@ export function GoogleImportPanel({ onImported }: { onImported: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [gbpOpen, setGbpOpen] = useState(false);
 
+  const [statusError, setStatusError] = useState<string | null>(null);
+
   const loadStatus = useCallback(async () => {
     try {
       const data = await api<GoogleStatus>('/api/google/status');
       setStatus(data);
-    } catch {
+      setStatusError(null);
+    } catch (err) {
       setStatus(null);
+      setStatusError(err instanceof ApiError ? err.message : 'Could not load Google settings');
     }
   }, []);
 
@@ -235,6 +239,8 @@ export function GoogleImportPanel({ onImported }: { onImported: () => void }) {
             </button>
           </div>
         </form>
+      ) : statusError ? (
+        <p className="mt-4 text-sm text-red-700">{statusError}</p>
       ) : (
         <p className="mt-4 text-sm text-red-700">
           Place search is off on the server. Set <code className="text-xs">GOOGLE_MAPS_API_KEY</code>{' '}
