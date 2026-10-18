@@ -32,7 +32,7 @@ type LocationContextValue = {
 const LocationContext = createContext<LocationContextValue | null>(null);
 
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, ready: authReady } = useAuth();
   const [locations, setLocations] = useState<LocationOption[]>([]);
   const [selectedId, setSelectedIdState] = useState<string | null>(() => {
     try {
@@ -87,22 +87,22 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
+    if (!authReady) return;
     if (!user) {
       setSelectedId(null);
       return;
     }
-    if (locations.length === 0) {
-      if (selectedId) setSelectedId(null);
-      return;
-    }
+    if (loading || locations.length === 0) return;
+
     const valid = selectedId && locations.some((row) => row.id === selectedId);
+    if (valid) return;
+
     const next =
-      (valid ? selectedId : null) ??
       locations.find((row) => row.status === 'ACTIVE')?.id ??
       locations[0]?.id ??
       null;
     if (next !== selectedId) setSelectedId(next);
-  }, [user, locations, selectedId, setSelectedId]);
+  }, [authReady, user, locations, loading, selectedId, setSelectedId]);
 
   const selected = useMemo(
     () => locations.find((row) => row.id === selectedId) ?? null,

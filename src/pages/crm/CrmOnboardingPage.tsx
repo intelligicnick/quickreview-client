@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { BUSINESS_TYPE_LABELS } from '../../lib/crm/terminology';
 import { useCrm } from '../../lib/crm/context';
 import type { BusinessType, CrmProfile } from '../../lib/crm/types';
+import { useLocationContext } from '../../lib/location-context';
 
 const GOALS = [
   { id: 'customers' as const, label: 'Customers' },
@@ -13,11 +14,20 @@ const GOALS = [
 
 export function CrmOnboardingPage() {
   const { state, setProfile } = useCrm();
+  const { selected } = useLocationContext();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Partial<CrmProfile>>({
     goals: ['customers', 'followups'],
   });
+
+  useEffect(() => {
+    if (draft.businessName?.trim()) return;
+    const fromProfile =
+      selected?.businessName?.trim() || selected?.name?.trim() || '';
+    if (!fromProfile) return;
+    setDraft((prev) => ({ ...prev, businessName: fromProfile }));
+  }, [selected?.businessName, selected?.name, draft.businessName]);
 
   if (state.profile?.onboardedAt) {
     return <Navigate to="/app/quickcrm" replace />;

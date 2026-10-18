@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Repeat } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 import { BrandMark } from '../../components/BrandMark';
+import { MenuCatalogBanner } from '../../components/menu/MenuCatalogBanner';
 import { MenuCatalogBrowseToolbar } from '../../components/menu/MenuCatalogBrowseToolbar';
 import { MenuItemImageCarousel, type MenuImagePlaceholder } from '../../components/menu/MenuItemImageCarousel';
 import {
@@ -102,11 +103,11 @@ export function MenuPage() {
 
   return (
     <div className="min-h-dvh bg-paper pb-12">
-      <header className="relative flex justify-center px-4 py-6">
+      <header className="relative flex justify-center border-b border-line/80 bg-white px-4 py-4">
         {menu.quickRevisitPath ? (
           <Link
             to={menu.quickRevisitPath}
-            className="absolute right-4 top-5 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm hover:border-brand/40"
+            className="absolute right-4 top-4 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm hover:border-brand/40"
           >
             <Repeat className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
             Quick Revisit
@@ -114,18 +115,15 @@ export function MenuPage() {
         ) : null}
         <BrandMark className="h-7 opacity-80" />
       </header>
-      <main className="mx-auto max-w-lg px-4">
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">{menu.copy.pageTitle}</p>
-          <h1 className="mt-1 text-2xl font-extrabold">{menu.locationName}</h1>
-          {menu.address ? <p className="mt-1 text-sm text-muted">{menu.address}</p> : null}
-          {menu.phone ? (
-            <a href={`tel:${menu.phone.replace(/\s/g, '')}`} className="mt-2 inline-block text-sm font-semibold text-brand">
-              {menu.phone}
-            </a>
-          ) : null}
-        </div>
 
+      <MenuCatalogBanner
+        pageTitle={menu.copy.pageTitle}
+        locationName={menu.locationName}
+        address={menu.address}
+        phone={menu.phone}
+      />
+
+      <main className="mx-auto max-w-lg px-4 pt-4">
         {menu.copy.guestBrowse ? (
           <MenuCatalogBrowseToolbar
             search={search}

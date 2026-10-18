@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Phone, Star } from 'lucide-react';
+import { BookOpen, Star } from 'lucide-react';
 import {
   filterMenuCatalog,
   formatMenuItemPrice,
@@ -9,6 +9,7 @@ import {
   type PricedMenuItem,
 } from '../../lib/menu-pricing';
 import { MenuItemImageCarousel, type MenuImagePlaceholder } from './MenuItemImageCarousel';
+import { MenuCatalogBanner } from './MenuCatalogBanner';
 import { MenuCatalogBrowseToolbar } from './MenuCatalogBrowseToolbar';
 import { BrandMark } from '../BrandMark';
 import { GuestPreviewHeading, MobileScreenFrame } from '../MobileScreenFrame';
@@ -38,7 +39,7 @@ type MenuCopy = {
 
 type Props = {
   locationName: string;
-  locationSubtitle?: string | null;
+  address?: string | null;
   phone?: string | null;
   copy: MenuCopy;
   categories: MenuCategory[];
@@ -107,7 +108,7 @@ function FeaturedPreviewCard({
 
 export function MenuGuestPreview({
   locationName,
-  locationSubtitle,
+  address = null,
   phone,
   copy,
   categories,
@@ -157,36 +158,14 @@ export function MenuGuestPreview({
             </div>
           ) : null}
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-16 pt-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 text-left">
-                <h2 className="text-lg font-extrabold leading-tight text-ink">{locationName}</h2>
-                {locationSubtitle ? (
-                  <p className="text-xs text-muted">{locationSubtitle}</p>
-                ) : (
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
-                    {copy.pageTitle}
-                  </p>
-                )}
-              </div>
-              {phone ? (
-                <a
-                  href={`tel:${phone.replace(/\s/g, '')}`}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm"
-                  aria-label="Call"
-                >
-                  <Phone className="h-4 w-4" />
-                </a>
-              ) : (
-                <span
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/15 text-brand"
-                  aria-hidden
-                >
-                  <Phone className="h-4 w-4" />
-                </span>
-              )}
-            </div>
+          <MenuCatalogBanner
+            pageTitle={copy.pageTitle}
+            locationName={locationName}
+            address={address}
+            phone={phone ?? null}
+          />
 
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-16 pt-3">
             {categories.length > 0 ? (
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 <button

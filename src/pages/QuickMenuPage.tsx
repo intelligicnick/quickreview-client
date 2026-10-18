@@ -10,6 +10,7 @@ import { CatalogWorkspaceTabs } from '../components/quickcommerce/CatalogWorkspa
 import { CategoryPriceVariantsEditor } from '../components/quickcommerce/CategoryPriceVariantsEditor';
 import { ItemPriceVariantsEditor } from '../components/quickcommerce/ItemPriceVariantsEditor';
 import { MenuItemPriceInputs } from '../components/quickcommerce/MenuItemPriceInputs';
+import { CatalogBulkImport } from '../components/quickcommerce/CatalogBulkImport';
 import { QuickCommerceOnboarding } from '../components/quickcommerce/QuickCommerceOnboarding';
 import { QrProductCard } from '../components/QrProductCard';
 import { productStatusLabel } from '../lib/location-workspace';
@@ -612,13 +613,16 @@ export function QuickMenuPage() {
                 </div>
               ) : null}
 
-              {workspaceTab === 'import' ? (
-                <div className="mt-6 rounded-2xl border border-dashed border-line bg-paper px-5 py-10 text-center">
-                  <p className="font-semibold">Import bulk</p>
-                  <p className="mt-2 text-sm text-muted">
-                    CSV / Excel import with column mapping is coming in the next release.
-                  </p>
-                </div>
+              {workspaceTab === 'import' && selected && hub ? (
+                <CatalogBulkImport
+                  locationId={selected.id}
+                  priceVariantScope={hub.priceVariantScope}
+                  categories={hub.categories}
+                  itemLabelPlural={copy.itemLabelPlural}
+                  onComplete={reload}
+                  onError={setError}
+                  onMessage={setMessage}
+                />
               ) : null}
 
               {workspaceTab !== 'primary' &&
@@ -881,7 +885,6 @@ export function QuickMenuPage() {
             <div className="lg:sticky lg:top-6 lg:self-start">
               <MenuGuestPreview
                 locationName={selected.name}
-                locationSubtitle={selected.businessName}
                 copy={copy}
                 categories={hub.categories}
                 imagePlaceholder={imagePlaceholder}
