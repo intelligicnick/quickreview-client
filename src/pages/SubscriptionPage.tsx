@@ -197,7 +197,7 @@ export function SubscriptionPage() {
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Valid until</th>
-                <th className="px-4 py-3 text-right">Action</th>
+                <th className="w-0 whitespace-nowrap px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -220,19 +220,19 @@ export function SubscriptionPage() {
                       />
                     </td>
                     <td className="px-4 py-4 text-muted">{validUntil}</td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="w-0 whitespace-nowrap px-4 py-4 text-right">
                       {planStatus === 'EXPIRED' ? (
-                        <Button size="sm" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
+                        <Button size="sm" className="whitespace-nowrap" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
                           Renew
                         </Button>
                       ) : planStatus === 'PENDING_PAYMENT' ? (
                         <span className="text-sm font-semibold text-amber-800">Awaiting confirmation</span>
                       ) : planStatus === 'ACTIVE' || planStatus === 'TRIAL' ? (
-                        <Button variant="secondary" size="sm" onClick={() => setCheckoutKey(row.key)}>
+                        <Button variant="secondary" size="sm" className="whitespace-nowrap" onClick={() => setCheckoutKey(row.key)}>
                           Manage
                         </Button>
                       ) : (
-                        <Button size="sm" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
+                        <Button size="sm" className="whitespace-nowrap" disabled={busy} onClick={() => setCheckoutKey(row.key)}>
                           Choose plan
                         </Button>
                       )}

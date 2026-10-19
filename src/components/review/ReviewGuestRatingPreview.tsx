@@ -1,12 +1,12 @@
 import { Star } from 'lucide-react';
 import { BrandMark } from '../BrandMark';
 
-const RATING_OPTIONS: Record<number, { label: string; emoji: string }> = {
-  1: { label: 'Terrible', emoji: '😢' },
-  2: { label: 'Okay', emoji: '😐' },
-  3: { label: 'Happy', emoji: '😊' },
-  4: { label: 'Very Good', emoji: '😄' },
-  5: { label: 'Excellent', emoji: '🤩' },
+const RATING_OPTIONS: Record<number, { label: string }> = {
+  1: { label: 'Terrible' },
+  2: { label: 'Okay' },
+  3: { label: 'Happy' },
+  4: { label: 'Very Good' },
+  5: { label: 'Excellent' },
 };
 
 type Props = {
@@ -82,10 +82,7 @@ export function ReviewGuestRatingPreview({
             compact ? 'px-2 py-0.5 text-[9px]' : 'px-3 py-1 text-xs'
           }`}
         >
-          {previewOption.label}{' '}
-          <span className={compact ? 'text-[10px] leading-none' : 'text-sm leading-none'}>
-            {previewOption.emoji}
-          </span>
+          {previewOption.label}
         </span>
 
         {showTapHint ? (

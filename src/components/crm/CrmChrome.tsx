@@ -4,6 +4,7 @@ import { PageHeader } from '../PageHeader';
 import { Button } from '../ui/Button';
 import { Tabs } from '../ui/Tabs';
 import { useCrm } from '../../lib/crm/context';
+import { useLocationContext } from '../../lib/location-context';
 import { crmPath } from '../../lib/crm/paths';
 import { CommerceSyncBanner } from './CommerceSyncBanner';
 
@@ -37,6 +38,7 @@ export function CrmChrome() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state } = useCrm();
+  const { selected } = useLocationContext();
   const hideChrome =
     location.pathname.includes('/onboarding') ||
     location.pathname.includes('/new') ||
@@ -79,7 +81,11 @@ export function CrmChrome() {
       <PageHeader
         breadcrumb="Sell & follow up / CRM"
         title="CRM"
-        description="Customers, quotations, invoices, and follow-ups for this location."
+        description={
+          selected
+            ? `Customers, quotations, invoices and follow-ups for ${selected.name}.`
+            : 'Customers, quotations, invoices and follow-ups for this location.'
+        }
         actions={
           <>
             <Button variant="secondary" size="sm" type="button" onClick={() => navigate(crmPath('customers/new'))}>

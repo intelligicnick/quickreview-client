@@ -291,6 +291,23 @@ export function markInvoicePaid(state: CrmState, invoiceId: string): void {
   }
 }
 
+export function reopenInvoice(state: CrmState, invoiceId: string): void {
+  const invoice = state.quotations.find((q) => q.id === invoiceId && q.documentType === 'invoice');
+  if (!invoice || invoice.status !== 'paid') return;
+  invoice.status = 'sent';
+  const sale = state.sales.find((s) => s.id === invoice.dealId);
+  if (sale) {
+    const payment = [...state.payments]
+      .filter((p) => p.saleId === sale.id && p.note === invoice.number)
+      .sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0];
+    if (payment) {
+      sale.received = Math.max(0, sale.received - payment.amount);
+      state.payments = state.payments.filter((p) => p.id !== payment.id);
+    }
+    if (sale.received < sale.amount) sale.stage = 'negotiation';
+  }
+}
+
 export function syncCommerceCatalog(
   state: CrmState,
   categories: CommerceCategory[],

@@ -14,7 +14,7 @@ export function QrCodesPage() {
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof loadWorkspaceSnapshot>> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [standeeCode, setStandeeCode] = useState('');
-  const [standeeKind, setStandeeKind] = useState<'review' | 'menu' | 'revisit'>('review');
+  const [standeeKind, setStandeeKind] = useState<'review' | 'menu' | 'revisit' | 'connect'>('review');
   const [standeeMsg, setStandeeMsg] = useState<string | null>(null);
   const [locationQrs, setLocationQrs] = useState<
     { code: string; claimUrl: string; targetUrl: string | null; isMerchantDigital: boolean }[]
@@ -61,7 +61,15 @@ export function QrCodesPage() {
         `/api/locations/${selected.id}/qr-codes/claim`,
         { method: 'POST', body: { code: standeeCode.trim(), kind: standeeKind } },
       );
-      setStandeeMsg(`Linked ${result.code} — scans now route to your ${standeeKind === 'revisit' ? 'Quick Revisit' : standeeKind} page`);
+      const targetLabel =
+        standeeKind === 'revisit'
+          ? 'Quick Revisit'
+          : standeeKind === 'connect'
+            ? 'QuickConnect card'
+            : standeeKind === 'menu'
+              ? 'catalogue'
+              : 'review page';
+      setStandeeMsg(`Linked ${result.code} — scans now route to your ${targetLabel}`);
       setStandeeCode('');
       const qrs = await api<
         { code: string; claimUrl: string; targetUrl: string | null; isMerchantDigital: boolean }[]
@@ -84,7 +92,7 @@ export function QrCodesPage() {
         title="QR codes & standees"
         description={
           selected
-            ? `Download and print codes for ${selected.name}. Link physical standees or order new ones from the marketplace.`
+            ? `Print-ready codes for ${selected.name}. Link a physical standee to any of them.`
             : 'All public QR codes for your selected location in one place.'
         }
         actions={
@@ -173,8 +181,7 @@ export function QrCodesPage() {
           <div className="mt-8 rounded-2xl border border-line bg-white p-5">
             <p className="font-bold">Link physical standee</p>
             <p className="mt-1 text-sm text-muted">
-              Enter the code from a Marketplace QR card ({'/q/…'}) to point it at this location&apos;s review page,
-              combined commerce hub, or revisit-only page.
+              Enter the code printed on your standee or NFC card. We&apos;ll route scans to the page you choose below.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <input
@@ -186,19 +193,16 @@ export function QrCodesPage() {
               <select
                 className="rounded-xl border border-line px-2 py-2 text-sm"
                 value={standeeKind}
-                onChange={(e) => setStandeeKind(e.target.value as 'review' | 'menu' | 'revisit')}
+                onChange={(e) => setStandeeKind(e.target.value as 'review' | 'menu' | 'revisit' | 'connect')}
               >
                 <option value="review">Review page</option>
                 <option value="menu">Catalogue + Quick Revisit</option>
                 <option value="revisit">Quick Revisit only</option>
+                <option value="connect">Business card</option>
               </select>
-              <button
-                type="button"
-                onClick={() => void claimStandee()}
-                className="min-h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark"
-              >
+              <Button type="button" variant="dark" size="sm" onClick={() => void claimStandee()}>
                 Link standee
-              </button>
+              </Button>
             </div>
             {standeeMsg ? <p className="mt-2 text-xs text-brand-dark">{standeeMsg}</p> : null}
           </div>

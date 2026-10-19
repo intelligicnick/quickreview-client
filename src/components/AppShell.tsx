@@ -229,7 +229,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <ImpersonationBanner />
         <header className="hidden items-center gap-4 border-b border-line bg-white px-8 py-3.5 lg:flex">
-          <label className="relative min-w-0 flex-1 max-w-xl">
+          <label className="relative min-w-0 max-w-xl">
             <span className="sr-only">Search</span>
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted stroke-[1.8]"
@@ -241,13 +241,15 @@ export function AppShell() {
               className="w-full min-h-11 rounded-[10px] border border-[#CBD5E1] bg-white py-2 pl-10 pr-3 text-sm text-ink"
             />
           </label>
-          <IconButton aria-label="Notifications" className="relative">
-            <Bell className="h-[18px] w-[18px] stroke-[1.8]" aria-hidden />
-            {inboxUnread > 0 ? (
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-700" aria-hidden />
-            ) : null}
-          </IconButton>
-          <AppAccountMenu />
+          <div className="ml-auto flex shrink-0 items-center gap-4">
+            <IconButton aria-label="Notifications" className="relative">
+              <Bell className="h-[18px] w-[18px] stroke-[1.8]" aria-hidden />
+              {inboxUnread > 0 ? (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-700" aria-hidden />
+              ) : null}
+            </IconButton>
+            <AppAccountMenu />
+          </div>
         </header>
         <main className="px-4 py-5 sm:px-7 sm:py-7 lg:px-8 lg:pb-14">
           <div className="mx-auto flex max-w-[1200px] flex-col gap-6">

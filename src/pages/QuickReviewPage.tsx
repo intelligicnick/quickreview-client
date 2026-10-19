@@ -586,7 +586,12 @@ export function QuickReviewPage() {
           {tab === 'inbox' && unlocked ? (
             <div className="mt-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-bold">Private feedback</h2>
+                <div>
+                  <h2 className="font-bold">Private feedback</h2>
+                  <p className="text-sm text-muted">
+                    Low ratings that stayed off Google. Reach out, fix it, then mark it resolved.
+                  </p>
+                </div>
                 <Segmented
                   aria-label="Inbox filter"
                   value={inboxFilter}
@@ -625,7 +630,7 @@ export function QuickReviewPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <InboxStars stars={stars} />
                             <span className="rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
-                              Needs reply
+                              Needs attention
                             </span>
                           </div>
                         </div>
@@ -643,7 +648,9 @@ export function QuickReviewPage() {
                             </a>
                           </p>
                         ) : (
-                          <p className="mt-4 text-xs text-muted">No phone left by the guest</p>
+                          <p className="mt-4 flex items-start gap-1.5 text-xs text-muted">
+                            The guest didn&apos;t leave a phone number or email, so you can&apos;t contact them.
+                          </p>
                         )}
                       </li>
                     );

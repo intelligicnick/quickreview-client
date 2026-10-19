@@ -48,6 +48,7 @@ type CrmContextValue = {
   recordPayment: (input: { saleId: string; amount: number; note?: string }) => void;
   convertQuotationToInvoice: (quotationId: string) => void;
   markInvoicePaid: (invoiceId: string) => void;
+  reopenInvoice: (invoiceId: string) => void;
   syncCommerce: () => Promise<{ ok: true; added: number; updated: number } | { ok: false; error: string }>;
   commerceSyncing: boolean;
   customerById: (id: string) => Customer | undefined;
@@ -147,6 +148,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       recordPayment: (input) => mutate((s) => store.recordPayment(s, input)),
       convertQuotationToInvoice: (quotationId) => mutate((s) => store.convertQuotationToInvoice(s, quotationId)),
       markInvoicePaid: (invoiceId) => mutate((s) => store.markInvoicePaid(s, invoiceId)),
+      reopenInvoice: (invoiceId) => mutate((s) => store.reopenInvoice(s, invoiceId)),
       syncCommerce,
       commerceSyncing,
       customerById: (id) => state.customers.find((c) => c.id === id),

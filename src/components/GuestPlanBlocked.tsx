@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { BrandMark } from './BrandMark';
 
@@ -38,12 +37,6 @@ export function GuestPlanBlocked({ reason, detail }: GuestPlanBlockedProps) {
           ? 'If you own this business, sign in and renew under Plans & billing to bring this page back.'
           : 'If you own this business, activate the product in your merchant dashboard.'}
       </p>
-      <Link
-        to="/login"
-        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-dark"
-      >
-        Merchant sign in
-      </Link>
     </div>
   );
 }

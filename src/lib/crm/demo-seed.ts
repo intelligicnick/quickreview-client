@@ -27,7 +27,7 @@ export function seedDemoIfEmpty(state: CrmState): boolean {
     description: 'Business website',
   });
 
-  store.createQuotation(state, {
+  const quote = store.createQuotation(state, {
     customerId: rahul.id,
     discount: 0,
     lines: [{ name: 'Website Development', quantity: 1, unitPrice: 25000, taxPercent: 18 }],
@@ -36,7 +36,7 @@ export function seedDemoIfEmpty(state: CrmState): boolean {
   store.addFollowUp(state, {
     customerId: rahul.id,
     dueAt: tomorrow.toISOString(),
-    reason: 'Quotation',
+    reason: `Follow up on quotation ${quote.number} · ₹${quote.total.toLocaleString('en-IN')}`,
   });
 
   const priya = store.addCustomer(state, {

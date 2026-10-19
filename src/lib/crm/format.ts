@@ -20,6 +20,19 @@ export function formatRelativeDay(iso: string): string {
   return formatShortDate(iso);
 }
 
+/** e.g. TOMORROW · TUE 20 OCT */
+export function formatFollowUpGroupHeading(iso: string): string {
+  const d = new Date(iso);
+  const rel = formatRelativeDay(iso).toUpperCase();
+  const weekday = d.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase();
+  if (rel === 'TODAY' || rel === 'TOMORROW' || rel === 'YESTERDAY') {
+    return `${rel} · ${weekday} ${day} ${month}`;
+  }
+  return `${weekday} ${day} ${month}`;
+}
+
 export function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

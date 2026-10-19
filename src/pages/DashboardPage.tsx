@@ -270,7 +270,7 @@ export function DashboardPage() {
               { label: 'Page views', value: review.stats.pageViews, hint: 'Guest opens on your review link' },
               { label: 'Star taps', value: review.stats.stars, hint: 'Guests who picked a rating' },
               { label: 'Private feedback', value: review.stats.privateFeedback, hint: 'Low-rating messages in inbox' },
-              { label: 'Google opens', value: review.stats.googleOpens, hint: 'Taps through to Google' },
+              { label: 'Sent to Google', value: review.stats.googleOpens, hint: '4–5★ guests who opened Google' },
             ].map((card) => (
               <StatTile key={card.label} label={card.label} value={card.value.toLocaleString('en-IN')} helper={card.hint} />
             ))}

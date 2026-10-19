@@ -11,6 +11,8 @@ export function CrmHomePage() {
   const navigate = useNavigate();
   const { state, customerById, logCall, convertQuotationToInvoice } = useCrm();
   const customers = state.customers.length;
+  const interestedCount = state.customers.filter((c) => c.status === 'interested').length;
+  const quotedCount = state.customers.filter((c) => c.status === 'quotation').length;
   const quotes = state.quotations.filter((q) => q.documentType === 'quotation');
   const invoices = state.quotations.filter((q) => q.documentType === 'invoice');
   const unpaidInvoices = invoices.filter((i) => i.status !== 'paid');
@@ -29,17 +31,26 @@ export function CrmHomePage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Customers" value={customers} helper="View all" onClick={() => navigate(crmPath('customers'))} />
+        <StatTile
+          label="Customers"
+          value={customers}
+          helper={
+            customers === 0
+              ? 'View all'
+              : `${interestedCount} interested · ${quotedCount} quoted`
+          }
+          onClick={() => navigate(crmPath('customers'))}
+        />
         <StatTile
           label="Open quotations"
           value={formatInr(openQuotesValue)}
-          helper={`${openQuotes.length} open`}
+          helper={`${openQuotes.length} awaiting customer response`}
           onClick={() => navigate(crmPath('quotations'))}
         />
         <StatTile
           label="Unpaid invoices"
           value={formatInr(unpaidInvoiceTotal)}
-          helper={`${unpaidInvoices.length} to collect`}
+          helper={`${unpaidInvoices.length} invoice${unpaidInvoices.length === 1 ? '' : 's'} to collect`}
           onClick={() => navigate(crmPath('invoices'))}
         />
         <StatTile

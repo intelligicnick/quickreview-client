@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatIndianPhone } from '../../lib/format-phone';
 import { DEAL_STAGE_LABELS } from '../../lib/crm/terminology';
 import { formatRelativeDay } from '../../lib/crm/format';
 import type { Customer, FollowUp } from '../../lib/crm/types';
 import { ContactActions } from './ContactActions';
+import { CrmAvatar } from './CrmAvatar';
 
 type Props = {
   customer: Customer;
@@ -15,10 +17,13 @@ export function CustomerCard({ customer, nextFollowUp, onCall }: Props) {
   return (
     <article className="rounded-2xl border border-line bg-white p-4 shadow-sm shadow-slate-200/30">
       <Link to={`/app/quickcrm/customers/${customer.id}`} className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="truncate font-semibold text-ink">{customer.name}</h3>
-          {customer.company ? <p className="truncate text-sm text-muted">{customer.company}</p> : null}
-          <p className="mt-1 text-sm text-muted">{customer.mobile}</p>
+        <div className="flex min-w-0 gap-3">
+          <CrmAvatar name={customer.name} />
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold text-ink">{customer.name}</h3>
+            {customer.company ? <p className="truncate text-sm text-muted">{customer.company}</p> : null}
+            <p className="mt-1 text-sm text-muted">{formatIndianPhone(customer.mobile)}</p>
+          </div>
         </div>
         <ChevronRight className="h-5 w-5 shrink-0 text-muted" />
       </Link>
