@@ -28,7 +28,13 @@ export function LoginPage() {
       setSession(data.user, data.accessToken);
       navigate(homePath(data.user), { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not sign in');
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error && err.message
+            ? err.message
+            : 'Could not sign in',
+      );
     } finally {
       setBusy(false);
     }
