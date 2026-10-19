@@ -57,7 +57,7 @@ const PRODUCT_ROWS: { key: ProductKey; name: string; planProduct: string; blurb:
   { key: 'quickScan', name: 'QuickScan', planProduct: 'QUICK_SCAN', blurb: 'Visiting card scan → CRM' },
 ];
 
-type PayMethod = 'RAZORPAY' | 'UPI' | 'CASH' | 'TRIAL';
+type PayMethod = 'RAZORPAY' | 'UPI' | 'CASH';
 
 export function SubscriptionPage() {
   const { selected } = useLocationContext();
@@ -109,8 +109,7 @@ export function SubscriptionPage() {
   useEffect(() => {
     if (!checkoutKey || plansForKey.length === 0) return;
     setPlanId(plansForKey[0].id);
-    const trial = plansForKey.find((p) => p.amountInr === 0);
-    setPayMethod(trial && plansForKey.length === 1 ? 'TRIAL' : 'RAZORPAY');
+    setPayMethod('RAZORPAY');
   }, [checkoutKey, plansForKey]);
 
   const expiredRows = useMemo(() => {
@@ -129,15 +128,14 @@ export function SubscriptionPage() {
     setError(null);
     setMessage(null);
     try {
-      const provider =
-        selectedPlan.amountInr === 0 ? undefined : payMethod === 'TRIAL' ? undefined : payMethod;
+      const provider = payMethod;
       const result = await api<{
         message: string;
         status: string;
         razorpay?: { keyId: string; orderId: string; amount: number; currency: string };
       }>(`/api/billing/locations/${selected.id}/checkout`, {
         method: 'POST',
-        body: provider ? { planId: selectedPlan.id, provider } : { planId: selectedPlan.id },
+        body: { planId: selectedPlan.id, provider },
       });
 
       if (result.razorpay) {
@@ -163,7 +161,11 @@ export function SubscriptionPage() {
       <PageHeader
         breadcrumb="This location / Plans & billing"
         title="Plans & billing"
-        description="One status per product for this location — renew or upgrade when you're ready."
+        description={
+          selected
+            ? `Billing is per location. You're viewing ${selected.businessName} · ${selected.name}.`
+            : "Billing is per location — renew or upgrade when you're ready."
+        }
       />
 
       {!selected ? <p className="text-sm text-muted">Select a location in the sidebar to manage billing.</p> : null}
@@ -271,13 +273,12 @@ export function SubscriptionPage() {
             >
               {plansForKey.map((plan) => (
                 <option key={plan.id} value={plan.id}>
-                  {plan.name} — {plan.amountInr === 0 ? 'Free trial' : `₹${plan.amountInr}`} · {plan.durationDays} days
+                  {plan.name} — ₹{plan.amountInr} · {plan.durationDays} days
                 </option>
               ))}
             </select>
           </label>
-          {selectedPlan.amountInr > 0 ? (
-            <fieldset className="mt-4">
+          <fieldset className="mt-4">
               <legend className="text-sm font-semibold">Payment method</legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {(['RAZORPAY', 'UPI', 'CASH'] as const).map((method) => (
@@ -299,14 +300,13 @@ export function SubscriptionPage() {
                 ))}
               </div>
             </fieldset>
-          ) : null}
           <button
             type="button"
             disabled={busy}
             onClick={() => void runCheckout()}
             className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50 sm:w-auto sm:px-8"
           >
-            {busy ? 'Working…' : selectedPlan.amountInr === 0 ? 'Start trial' : 'Continue to pay'}
+            {busy ? 'Working…' : `Continue to pay · ₹${selectedPlan.amountInr}`}
           </button>
         </div>
       ) : null}

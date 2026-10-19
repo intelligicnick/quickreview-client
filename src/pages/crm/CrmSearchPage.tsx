@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { crmPath } from '../../lib/crm/paths';
 import { formatInr, formatRelativeDay } from '../../lib/crm/format';
 import { searchCrm } from '../../lib/crm/search';
@@ -7,8 +7,14 @@ import { useCrm } from '../../lib/crm/context';
 
 export function CrmSearchPage() {
   const { state } = useCrm();
-  const [q, setQ] = useState('');
+  const [searchParams] = useSearchParams();
+  const [q, setQ] = useState(() => searchParams.get('q')?.trim() ?? '');
   const hits = useMemo(() => searchCrm(state, q), [state, q]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('q')?.trim() ?? '';
+    if (fromUrl) setQ(fromUrl);
+  }, [searchParams]);
 
   return (
     <div className="space-y-4">

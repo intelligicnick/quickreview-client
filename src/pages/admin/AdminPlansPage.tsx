@@ -4,6 +4,7 @@ import { Sheet } from '../../components/admin/ui/Sheet';
 import { ADMIN_PRODUCT_LABEL, productDisplayName } from '../../lib/admin-products';
 import { api, ApiError } from '../../lib/api';
 import { formatINR, pluralize } from '../../lib/admin-ui';
+import { isTrialPlanCode } from '../../lib/plan-codes';
 
 type Plan = {
   id: string;
@@ -58,7 +59,7 @@ export function AdminPlansPage() {
     const byProduct = new Map<string, { trial?: Plan; monthly?: Plan }>();
     for (const plan of plans) {
       const bucket = byProduct.get(plan.product) ?? {};
-      if (plan.amountInr === 0) bucket.trial = plan;
+      if (isTrialPlanCode(plan.code)) bucket.trial = plan;
       else bucket.monthly = plan;
       byProduct.set(plan.product, bucket);
     }
@@ -105,7 +106,7 @@ export function AdminPlansPage() {
   function openAdd(product?: string, kind?: 'trial' | 'paid') {
     const next = emptyDraft(product ?? 'QUICK_REVIEW');
     if (kind === 'trial') {
-      next.amountInr = '0';
+      next.amountInr = '65';
       next.durationDays = '7';
     }
     setDraft(next);
@@ -182,7 +183,7 @@ export function AdminPlansPage() {
     }
     const label =
       kind === 'trial'
-        ? `${plan.durationDays} days`
+        ? `${formatINR(plan.amountInr)} · ${plan.durationDays} days`
         : `${formatINR(plan.amountInr)} / ${plan.durationDays} d`;
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -203,7 +204,7 @@ export function AdminPlansPage() {
     <div>
       <PageHeader
         title="Plans & prices"
-        subtitle="Set trial length and monthly price per product."
+        subtitle="Set intro trial price (short period) and monthly price per product."
         actions={
           <button type="button" className="admin-btn-primary" onClick={() => openAdd()}>
             Add plan
@@ -220,7 +221,7 @@ export function AdminPlansPage() {
           <thead>
             <tr className="border-b border-[var(--admin-border)] text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
               <th className="py-2 pr-3">Product</th>
-              <th className="py-2 pr-3">Free trial</th>
+              <th className="py-2 pr-3">Intro trial</th>
               <th className="py-2 pr-3">Monthly</th>
               <th className="py-2 pr-3">Sold to merchants</th>
               <th className="py-2">Live</th>
@@ -307,7 +308,9 @@ export function AdminPlansPage() {
               value={draft.amountInr}
               onChange={(e) => setDraft((d) => ({ ...d, amountInr: e.target.value }))}
             />
-            <span className="mt-1 block text-xs text-[var(--admin-muted)]">Use 0 for a free trial plan.</span>
+            <span className="mt-1 block text-xs text-[var(--admin-muted)]">
+              Trial plans use a code ending in <code className="text-xs">_trial</code> (e.g. quickreview_trial).
+            </span>
           </label>
           <label className="block text-sm">
             <span className="admin-label">Duration (days)</span>

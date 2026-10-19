@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Check,
   Copy,
@@ -29,7 +29,7 @@ import { formatIndianPhone } from '../lib/format-phone';
 import { useLocationContext } from '../lib/location-context';
 
 type Tab = 'qr' | 'stats' | 'inbox' | 'settings';
-type InboxFilter = 'open' | 'resolved' | 'all';
+type InboxFilter = 'open' | 'all';
 type ReviewTone = 'friendly' | 'professional' | 'short';
 
 type Summary = {
@@ -70,8 +70,7 @@ type InboxItem = {
   createdAt: string;
 };
 
-function inboxForFilter(items: InboxItem[], filter: InboxFilter): InboxItem[] {
-  if (filter === 'resolved') return [];
+function inboxForFilter(items: InboxItem[], _filter: InboxFilter): InboxItem[] {
   return items;
 }
 
@@ -146,9 +145,37 @@ function buildTabs(openInbox: number): { id: Tab; label: string }[] {
   ];
 }
 
+function reviewShareWhatsAppUrl(publicUrl: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(publicUrl)}`;
+}
+
 export function QuickReviewPage() {
   const { selected } = useLocationContext();
-  const [tab, setTab] = useState<Tab>('qr');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTabState] = useState<Tab>(() => {
+    const t = searchParams.get('tab');
+    if (t === 'stats' || t === 'inbox' || t === 'settings') return t;
+    return 'qr';
+  });
+
+  function setTab(next: Tab) {
+    setTabState(next);
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next === 'qr') p.delete('tab');
+        else p.set('tab', next);
+        return p;
+      },
+      { replace: true },
+    );
+  }
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t === 'stats' || t === 'inbox' || t === 'settings') setTabState(t);
+    else if (!t) setTabState('qr');
+  }, [searchParams]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -378,9 +405,17 @@ export function QuickReviewPage() {
                             <Printer className="h-4 w-4" />
                             Print standee
                           </Link>
+                          <a
+                            href={reviewShareWhatsAppUrl(summary.publicUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={BTN_SECONDARY}
+                          >
+                            Share on WhatsApp
+                          </a>
                           <a href={summary.publicPath} target="_blank" rel="noreferrer" className={BTN_SECONDARY}>
                             <ExternalLink className="h-4 w-4" />
-                            Open guest page
+                            Open guest page ↗
                           </a>
                         </div>
                         <Link
@@ -598,7 +633,6 @@ export function QuickReviewPage() {
                   onChange={setInboxFilter}
                   options={[
                     { id: 'open', label: `Open · ${inbox.length}` },
-                    { id: 'resolved', label: 'Resolved · 0' },
                     { id: 'all', label: `All · ${inbox.length}` },
                   ]}
                 />

@@ -40,7 +40,7 @@ export function ActivatePlanForLocation({ locationId, locationName, onActivated,
       .map((plan) => {
         const product = productDisplayName(plan.product);
         const price =
-          plan.amountInr === 0 ? `free · ${plan.durationDays}d` : `${formatINR(plan.amountInr)} · ${plan.durationDays}d`;
+          `${formatINR(plan.amountInr)} · ${plan.durationDays}d`;
         return { plan, label: `${product} — ${plan.name} (${price})` };
       })
       .sort((a, b) => a.label.localeCompare(b.label));

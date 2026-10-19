@@ -16,13 +16,12 @@ import {
 } from 'lucide-react';
 import { CRM_BASE } from '../lib/crm/paths';
 import { useEffect, useState, type ComponentType } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { BrandMark } from './BrandMark';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import { LocationSwitcher } from './LocationSwitcher';
 import { AppAccountMenu } from './AppAccountMenu';
-import { IconButton } from './ui/IconButton';
 import { useLocationContext } from '../lib/location-context';
 import { useLocationBillingSummary } from '../hooks/useLocationBillingSummary';
 
@@ -77,10 +76,12 @@ function navActive(pathname: string, item: NavItem, isActive: boolean) {
 
 export function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { selected } = useLocationContext();
   const { expiredCount, expiredLabel } = useLocationBillingSummary(selected?.id ?? null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [inboxUnread, setInboxUnread] = useState(0);
+  const [searchDraft, setSearchDraft] = useState('');
 
   useEffect(() => {
     setMenuOpen(false);
@@ -238,16 +239,29 @@ export function AppShell() {
             <input
               type="search"
               placeholder="Search customers, products, reviews"
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                const q = searchDraft.trim();
+                if (!q) return;
+                navigate(`${CRM_BASE}/search?q=${encodeURIComponent(q)}`);
+                setSearchDraft('');
+              }}
               className="w-full min-h-11 rounded-[10px] border border-[#CBD5E1] bg-white py-2 pl-10 pr-3 text-sm text-ink"
             />
           </label>
           <div className="ml-auto flex shrink-0 items-center gap-4">
-            <IconButton aria-label="Notifications" className="relative">
+            <Link
+              to="/app/quickreview?tab=inbox"
+              aria-label="Notifications"
+              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-ink hover:bg-line-soft"
+            >
               <Bell className="h-[18px] w-[18px] stroke-[1.8]" aria-hidden />
               {inboxUnread > 0 ? (
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-700" aria-hidden />
               ) : null}
-            </IconButton>
+            </Link>
             <AppAccountMenu />
           </div>
         </header>
